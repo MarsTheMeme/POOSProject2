@@ -1,4 +1,4 @@
-const app_name = '167.71.175.51'
+const app_name = 'seesagenda.online'
 
 export function buildPath(route: string): string
 {
