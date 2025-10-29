@@ -38,7 +38,7 @@ function Login()
         axios(config)
         .then(function (response)
         {
-            var res = response.data;
+            var res = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
             if (res.error)
             {
                 setMessage('User/Password combination incorrect');
