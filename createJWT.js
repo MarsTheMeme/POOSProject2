@@ -57,4 +57,4 @@ exports.refresh = function( token )
     var lastName = ud.payload.lastName;
 
     return _createToken( firstName, lastName, userId );
-}
+}   
