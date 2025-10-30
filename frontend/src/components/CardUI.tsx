@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import { buildPath } from './Path.ts';
 import { retrieveToken, storeToken } from '../tokenStorage.ts';
 
@@ -9,9 +9,9 @@ function CardUI()
     let userId : string = ud.id;
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
-    const [message,setMessage] = useState('');
-    const [searchResults,setResults] = useState('');
-    const [cardList,setCardList] = useState('');
+    const [message,setMessage] = React.useState('');
+    const [searchResults,setResults] = React.useState('');
+    const [cardList,setCardList] = React.useState('');
     const [search,setSearchValue] = React.useState('');
     const [card,setCardNameValue] = React.useState('');
 
