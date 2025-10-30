@@ -64,7 +64,7 @@ function Login()
 
     return(
         <div id="loginDiv">
-            <span id="inner-title">PLEASE LOG IN also TestingCICD</span><br />
+            <span id="inner-title">PLEASE LOG IN</span><br />
             <input 
                 type="text" 
                 id="loginName" 
