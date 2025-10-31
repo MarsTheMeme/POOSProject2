@@ -29,48 +29,86 @@ function SignUp()
 
         try
         {
-            const response = await
-            fetch(buildPath('api/signup'),
-            {method:'POST', body:js, headers:{'Content-Type':
-            'application/json'}});
-
-            var res = JSON.parse(await response.text());
+            console.log('Sending signup request to:', buildPath('api/signup'));
             
-            if( res.error && res.error.length > 0 )
-            {
-                setMessage( res.error );
+            const response = await fetch(buildPath('api/signup'), {
+                method: 'POST', 
+                body: js, 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            
+            let res;
+            try {
+                res = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Failed to parse JSON:', parseError);
+                setMessage('Invalid response from server');
+                return;
+            }
+            
+            if (res.error && res.error.length > 0) {
+                setMessage(res.error);
+                return;
+            }
+            
+            // Check if we have an access token
+            if (!res.accessToken) {
+                console.error('No access token in response:', res);
+                setMessage('Signup successful but no token received');
                 return;
             }
             
             const { accessToken } = res;
-            storeToken( res );
+            storeToken(res);
 
-            const decoded = jwtDecode<JwtPayload>(accessToken);
-            
-            try
-            {
-                var ud = decoded
-                var userId = ud.id;
-                var userfirstName = ud.firstName;
-                var userlastName = ud.lastName;
+            try {
+                const decoded = jwtDecode<JwtPayload>(accessToken);
+                console.log('Decoded token:', decoded);
+                
+                const userId = decoded.id;
+                const userfirstName = decoded.firstName;
+                const userlastName = decoded.lastName;
 
-                var user =
-                {firstName:userfirstName, lastName:userlastName, id:userId}
+                const user = {
+                    firstName: userfirstName, 
+                    lastName: userlastName, 
+                    id: userId
+                };
                 localStorage.setItem('user_data', JSON.stringify(user));
                 
-                setMessage('');
-                window.location.href = '/calendar';
+                setMessage('Account created successfully!');
+                setTimeout(() => {
+                    window.location.href = '/calendar';
+                }, 1000);
             }
-            catch(e)
-            {
-                console.log(e);
-                setMessage('An error occurred during signup');
+            catch(tokenError) {
+                console.error('Token decode error:', tokenError);
+                setMessage('Account created but login failed. Please try logging in.');
                 return;
             }
         }
-        catch(error:any)
+        catch(error: any)
         {
-            setMessage('Network error. Please try again.');
+            console.error('Signup error:', error);
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                setMessage('Cannot connect to server. Please check if the backend is running.');
+            } else if (error.message.includes('HTTP error')) {
+                setMessage(`Server error: ${error.message}`);
+            } else {
+                setMessage('Network error. Please try again.');
+            }
             return;
         }
     };

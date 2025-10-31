@@ -22,46 +22,95 @@ function Login()
     {
         event.preventDefault();
 
-        var obj = {login:loginName, password:loginPassword};
-        var js = JSON.stringify(obj);
+        const obj = {login: loginName, password: loginPassword};
+        const js = JSON.stringify(obj);
 
-        var config =
+        try
         {
-            method: 'post',
-            url: buildPath('api/login'),
-            headers:
-            {
-                'Content-Type': 'application/json'
-            },
-            data: js
-        };
+            console.log('Sending login request to:', buildPath('api/login'));
+            
+            const response = await fetch(buildPath('api/login'), {
+                method: 'POST', 
+                body: js, 
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
-        axios(config)
-        .then(function (response)
-        {
-            var res = response.data;
-            if (res.error)
-            {
-                setMessage('User/Password combination incorrect');
+            console.log('Login response status:', response.status);
+            console.log('Login response ok:', response.ok);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            else
-            {
-                storeToken(res);
-                var ud = jwtDecode<JwtPayload>(retrieveToken());
-                var userId = ud.userId;
-                var firstName = ud.firstName;
-                var lastName = ud.lastName;
 
-                var user = {firstName:firstName, lastName:lastName, id:userId}
+            const responseText = await response.text();
+            console.log('Login response text:', responseText);
+            
+            let res;
+            try {
+                res = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Failed to parse login JSON:', parseError);
+                setMessage('Invalid response from server');
+                return;
+            }
+            
+            if (res.error && res.error.length > 0) {
+                setMessage(res.error);
+                return;
+            }
+            
+            // Check if we have an access token
+            if (!res.accessToken && !res.token) {
+                console.error('No access token in login response:', res);
+                setMessage('Login successful but no token received');
+                return;
+            }
+            
+            const token = res.accessToken || res.token;
+            
+            // Store the token
+            storeToken(res);
+
+            try {
+                const decoded = jwtDecode<JwtPayload>(token);
+                console.log('Decoded login token:', decoded);
+                
+                const userId = decoded.userId;
+                const firstName = decoded.firstName;
+                const lastName = decoded.lastName;
+
+                const user = {
+                    firstName: firstName, 
+                    lastName: lastName, 
+                    id: userId
+                };
                 localStorage.setItem('user_data', JSON.stringify(user));
-                window.location.href = '/calendar';
+                
+                setMessage('Login successful!');
+                setTimeout(() => {
+                    window.location.href = '/calendar';
+                }, 1000);
             }
-        })
-        .catch(function (error)
+            catch(tokenError) {
+                console.error('Token decode error:', tokenError);
+                setMessage('Login successful but token invalid. Please try again.');
+                return;
+            }
+        }
+        catch(error: any)
         {
-            console.log(error);
-            setMessage('An error occurred. Please try again.');
-        });
+            console.error('Login error:', error);
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                setMessage('Cannot connect to server. Please check if the backend is running.');
+            } else if (error.message.includes('HTTP error')) {
+                setMessage(`Server error: ${error.message}`);
+            } else {
+                setMessage('Network error. Please try again.');
+            }
+            return;
+        }
     }
 
     const handleCalendarTest = () => {

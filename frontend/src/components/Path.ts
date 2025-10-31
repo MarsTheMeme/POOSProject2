@@ -8,8 +8,8 @@ export function buildPath(route: string): string
     }
     else
     {
-        // In development, use relative path - Vite proxy will handle it
-        return '/' + route;
+        // Direct connection to backend for testing
+        return 'http://localhost:5001/' + route;
     }
 }
 

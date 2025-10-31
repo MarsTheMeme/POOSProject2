@@ -59,9 +59,13 @@ exports.setApp = function( app, client )
         // incoming: login, password
         // outgoing: id, firstName, lastName, error
 
+        console.log('🔐 Login request received:', req.body);
+        
         var error = '';
 
         const { login, password } = req.body;
+        
+        console.log('🔐 Parsed login fields:', { login, password: password ? '***' : undefined });
 
         const db = client.db('COP4331Cards');
         const results = await
@@ -76,24 +80,35 @@ exports.setApp = function( app, client )
             id = results[0]._id; // id from mongoDB
             fn = results[0].FirstName;
             ln = results[0].LastName;
+            
+            console.log('✅ User found:', fn, ln, 'ID:', id);
 
             var ret;
             
             try
             {
                 const token = require('./createJWT.js');
-                ret = token.createToken( fn, ln, id );
+                const tokenResult = token.createToken( fn, ln, id );
+                ret = { 
+                    accessToken: tokenResult.token,  // Frontend expects 'accessToken'
+                    token: tokenResult.token,        // Keep 'token' for compatibility
+                    error: '' 
+                };
+                console.log('✅ Login token created successfully');
             }
             catch(e)
             {
+                console.error('❌ Login token creation failed:', e.message);
                 ret = { error:e.message };
             }
         }
         else
         {
+            console.log('❌ Login failed: User not found or incorrect password');
             ret = { error:'Login/Password incorrect' };
         }
 
+        console.log('📤 Login response:', ret);
         res.status(200).json(ret);
     });
 
@@ -102,9 +117,17 @@ exports.setApp = function( app, client )
         // incoming: login, password, firstName, lastName
         // outgoing: id, firstName, lastName, error
 
+        console.log('📝 Signup request received:', req.body);
+        
         var error = '';
         
-        const { Login:login, Password:password, FirstName:firstName, LastName:lastName } = req.body;
+        // Handle both camelCase and PascalCase field names
+        const login = req.body.Login || req.body.login;
+        const password = req.body.Password || req.body.password;
+        const firstName = req.body.FirstName || req.body.firstName;
+        const lastName = req.body.LastName || req.body.lastName;
+        
+        console.log('📝 Parsed fields:', { login, password: password ? '***' : undefined, firstName, lastName });
 
         // Check for missing fields
         if( !login || !password || !firstName || !lastName || login.trim().length === 0 || password.trim().length === 0 || firstName.trim().length === 0 || lastName.trim().length === 0 )
@@ -132,23 +155,33 @@ exports.setApp = function( app, client )
         {
             const result = await db.collection('Users').insertOne(newUser);
             var id = result.insertedId.toString();
+            console.log('✅ User created successfully with ID:', id);
+            
             try
             {
                 const token = require('./createJWT.js');
-                ret = token.createToken( firstName, lastName, id );
-                ret.error = '';
+                const tokenResult = token.createToken( firstName, lastName, id );
+                ret = { 
+                    accessToken: tokenResult.token,  // Frontend expects 'accessToken'
+                    token: tokenResult.token,        // Keep 'token' for compatibility
+                    error: '' 
+                };
+                console.log('✅ Token created successfully');
             }
             catch(e)
             {
+                console.error('❌ Token creation failed:', e.message);
                 ret = { error:e.message };
             }
         }
         catch(e)
         {
+            console.error('❌ Database insert failed:', e.toString());
             error = e.toString();
             ret = { error: error };
         }
 
+        console.log('📤 Sending response:', ret);
         res.status(200).json(ret);
     });
 
