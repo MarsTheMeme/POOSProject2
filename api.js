@@ -24,7 +24,7 @@ exports.setApp = function( app, client )
 
         if( results.length > 0 )
         {
-            id = results[0]._id; // id from mongoDB
+            id = results[0]._id.toString(); // id from mongoDB
             fn = results[0].FirstName;
             ln = results[0].LastName;
 
