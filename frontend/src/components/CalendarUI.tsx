@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import { buildPath } from './Path.ts';
 import { retrieveToken, storeToken } from '../tokenStorage.ts';
 
@@ -17,17 +17,76 @@ function CalendarUI()
     const [date,setDate] = React.useState('');
     const [name,setName] = React.useState('');
     const [type,setType] = React.useState('');
-    const [friend,setFriend] = React.useState('');
+    const [selectedFriends,setSelectedFriends] = React.useState<string[]>([]);
     const [notes,setNotes] = React.useState('');
     const [time,setTime] = React.useState('');
     const [eventList, setEventList] = useState<any[]>([]); // stores events in a list
+    const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     
+    useEffect(() => {
+        // Fetch friend list on component mount
+        loadFriends();
+    }, []);
+
+    function handleTokenExpiration(error: string) : void
+    {
+        if (error === 'The JWT is no longer valid' ) 
+        {
+            alert('Session has expired. Please log in again.');
+            localStorage.removeItem('token_data');
+            localStorage.removeItem('user_data');
+            window.location.href = '/';
+        }
+    }
+    
+    async function loadFriends() : Promise<void>
+    {
+        var obj = {userId:userId,search:'',jwtToken:retrieveToken()};
+        var js = JSON.stringify(obj);
+
+        try
+        {
+            const response = await
+            fetch(buildPath('api/searchfriend'),
+            {method:'POST',body:js,headers:{'Content-Type':
+            'application/json'}});
+
+            let txt = await response.text();
+            let res = JSON.parse(txt);
+
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
+
+            let _results = res.results;
+
+            setFriendList(_results || []);
+            storeToken( res.jwtToken );
+        }
+        catch(error:any)
+        {
+            console.log(error.toString());
+        }
+    }
+
+    function getFriendNames(friendIds: string): string
+    {
+        if (!friendIds) return 'No Friends';
+        const ids = friendIds.split(',');
+        const names = ids.map(id => {
+            const friend = friendList.find(f => f.friend_id === id);
+            return friend ? `${friend.firstName} ${friend.lastName}` : id;
+        });
+        return names.join(', ');
+    }
 
     async function addEvent(e:any) : Promise<void>
     {
         e.preventDefault();
-
-        var obj = {date:date,type:type,friend:friend,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        const friendIds = selectedFriends.join(',');
+        var obj = {date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -39,6 +98,12 @@ function CalendarUI()
 
             let txt = await response.text();
             let res = JSON.parse(txt);
+
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
 
             if( res.error.length > 0 )
             {
@@ -73,6 +138,13 @@ function CalendarUI()
 
             let txt = await response.text();
             let res = JSON.parse(txt);
+
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
+
             let _results = res.results;
 
             setEventList(_results);
@@ -111,6 +183,12 @@ function CalendarUI()
             let txt = await response.text();
             let res = JSON.parse(txt);
 
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
+
             storeToken( res.jwtToken );
         }
         catch(error:any)
@@ -127,7 +205,7 @@ function CalendarUI()
         setDate( date );
         setType( event_type );
         setName( name );
-        setFriend( friend_id );
+        setSelectedFriends( friend_id ? friend_id.split(',') : [] );
         setNotes (notes );
         setTime( time );
     }
@@ -139,7 +217,7 @@ function CalendarUI()
         setTime('');
         setName('');
         setType('');
-        setFriend('');
+        setSelectedFriends([]);
         setNotes('');
     }
 
@@ -153,7 +231,8 @@ function CalendarUI()
             return;
         }
 
-        var obj = {_id:eventId,date:date,type:type,friend:friend,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        const friendIds = selectedFriends.join(',');
+        var obj = {_id:eventId,date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -165,6 +244,12 @@ function CalendarUI()
 
             let txt = await response.text();
             let res = JSON.parse(txt);
+
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
 
             if( res.error.length > 0 )
             {
@@ -203,9 +288,18 @@ function CalendarUI()
     {
         setType( e.target.value );
     }
-    function handleSetFriend( e: any ) : void
+    function handleFriendSelection( e: any ) : void
     {
-        setFriend( e.target.value );
+        const options = e.target.options;
+        const selected: string[] = [];
+        for (let i = 0; i < options.length; i++) 
+        {
+            if (options[i].selected) 
+            {
+                selected.push(options[i].value);
+            }
+        }
+        setSelectedFriends(selected);
     }
     function handleSetNotes( e: any ) : void
     {
@@ -233,7 +327,7 @@ function CalendarUI()
                             <p><strong>Name:</strong> {event.name}</p>
                             <p><strong>Type:</strong> {event.event_type}</p>
                             <p><strong>Notes:</strong> {event.notes}</p>
-                            {event.friend_id && <p><strong>Friend:</strong> {event.friend_id}</p>}
+                            {event.friend_id && <p><strong>Friend:</strong> {getFriendNames(event.friend_id)}</p>}
                             <button type="button" id="deleteEventButton" className="buttons"
                             onClick={() => deleteEvent(event._id,event.userId)}> Delete Event </button><br /><br />
                             <button type="button" id="populateEditEvent" className="buttons"
@@ -249,10 +343,29 @@ function CalendarUI()
             onChange={handleSetTime} /><br />
             <input type="text" id="cardText" placeholder="Name" value={name}
             onChange={handleSetName} /><br />
-            <input type="text" id="cardText" placeholder="Event Type" value={type}
-            onChange={handleSetType} /><br />
-            <input type="text" id="cardText" placeholder="Friends To Add" value={friend}
-            onChange={handleSetFriend} /><br />
+            <select id="cardText" name="eventType" value={type}
+            onChange={handleSetType} >
+                <option value="">Select Event Type</option>
+                <option value="Home">Home</option>
+                <option value="Work">Work</option>
+                <option value="School">School</option>
+                <option value="Personal">Personal</option>
+                <option value="Other">Other</option>
+            </select><br />
+            <label htmlFor="friendSelect">Select Friends (hold Ctrl/Cmd to select multiple):</label><br />
+            <select
+                id="friendSelect"
+                multiple
+                value={selectedFriends}
+                onChange={handleFriendSelection}
+                style={{ width: '200px', height: '100px' }}
+            >
+                {friendList.map((friend, index) => (
+                    <option key={index} value={friend.friend_id}>
+                        {friend.firstName} {friend.lastName} ({friend.friend_id})
+                    </option>
+                ))}
+            </select><br />
             <input type="text" id="cardText" placeholder="Notes" value={notes}
             onChange={handleSetNotes} /><br />
             <button type="button" id="addEventButton" className="buttons"

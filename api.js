@@ -5,55 +5,6 @@ const token = require('./createJWT.js');
 
 exports.setApp = function( app, client )
 {
-    app.post('/api/addcard', async (req, res, next) =>
-    {
-        // incoming: userId, color
-        // outgoing: error
-
-        const { userId, card, jwtToken } = req.body;
-
-        try
-        {
-            if( token.isExpired(jwtToken))
-            {
-                var r = {error:'The JWT is no longer valid',jwtToken: ''};
-                res.status(200).json(r);
-                return;
-            }
-        }
-        catch(e)
-        {
-            console.log(e.message);
-        }
-
-        const newCard = {Card:card,UserId:userId};
-        var error = '';
-
-        try
-        {
-            const db = client.db('COP4331Cards');
-            const result = db.collection('Cards').insertOne(newCard);
-        }
-        catch(e)
-        {
-            error = e.toString();
-        }
-
-        var refreshedToken = null;
-        try
-        {
-            refreshedToken = token.refresh(jwtToken);;
-        }
-        catch(e)
-        {
-            console.log(e.message);
-        }
-
-        var ret = { error: error, jwtToken:refreshedToken };
-
-        res.status(200).json(ret);
-    });
-
     app.post('/api/login', async (req, res, next) =>
     {
         // incoming: login, password
@@ -63,9 +14,9 @@ exports.setApp = function( app, client )
 
         const { login, password } = req.body;
 
-        const db = client.db('COP4331Cards');
+        const db = client.db('sample_mflix');
         const results = await
-        db.collection('Users').find({Login:login,Password:password}).toArray();
+        db.collection('USERS').find({Login:login,Password:password}).toArray();
         
         var id = -1;
         var fn = '';
@@ -82,7 +33,8 @@ exports.setApp = function( app, client )
             try
             {
                 const token = require('./createJWT.js');
-                ret = token.createToken( fn, ln, id );
+                retToken = token.createToken( fn, ln, id );
+                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: fn, lastName: ln};
             }
             catch(e)
             {
@@ -115,9 +67,9 @@ exports.setApp = function( app, client )
         }
 
         // Check for existing username
-        const db = client.db('COP4331Cards');
+        const db = client.db('sample_mflix');
         const results = await
-        db.collection('Users').find({Login:login}).toArray();
+        db.collection('USERS').find({Login:login}).toArray();
         if( results.length > 0 )
         {
             var ret = { error:'Username already exists' };
@@ -130,13 +82,13 @@ exports.setApp = function( app, client )
 
         try
         {
-            const result = await db.collection('Users').insertOne(newUser);
+            const result = await db.collection('USERS').insertOne(newUser);
             var id = result.insertedId.toString();
             try
             {
                 const token = require('./createJWT.js');
-                ret = token.createToken( firstName, lastName, id );
-                ret.error = '';
+                retToken = token.createToken( firstName, lastName, id );
+                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: firstName, lastName: lastName, error: '' };
             }
             catch(e)
             {
@@ -151,55 +103,7 @@ exports.setApp = function( app, client )
 
         res.status(200).json(ret);
     });
-
-    app.post('/api/searchcards', async (req, res, next) =>
-    {
-        // incoming: userId, search
-        // outgoing: results[], error
-
-        var error = '';
-
-        const { userId, search, jwtToken } = req.body;
-
-        try
-        {
-            if( token.isExpired( jwtToken ))
-            {
-                var r = {error:'The JWT is no longer valid',jwtToken: ''};
-                res.status(200).json(r);
-                return;
-            }
-        }
-        catch(e)
-        {
-            console.log(e.message);
-        }
-
-        var _search = search.trim();
-        
-        const db = client.db('COP4331Cards');
-        const results = await db.collection('Cards').find({"Card":{$regex:_search+'.*', $options:'i'}}).toArray();
-        
-        var _ret = [];
-        for( var i=0; i<results.length; i++ )
-        {
-            _ret.push( results[i].Card );
-        }
-        
-        var refreshedToken = null;
-        try
-        {
-            refreshedToken = token.refresh(jwtToken);;
-        }
-        catch(e)
-        {
-            console.log(e.message);
-        }
-
-        var ret = {results:_ret, error:error, jwtToken:refreshedToken};
-        res.status(200).json(ret);
-    });
-
+    
     app.post('/api/addevent', async (req, res, next) =>
     {
         // incoming: date, event_type, friend_id, name, notes, userId, time
@@ -226,7 +130,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('COP4331Cards');
+            const db = client.db('sample_mflix');
             const result = db.collection('CALENDAR_EVENT').insertOne(newEvent);
         }
         catch(e)
@@ -274,7 +178,7 @@ exports.setApp = function( app, client )
 
         var _search = search.trim();
         
-        const db = client.db('COP4331Cards');
+        const db = client.db('sample_mflix');
         const results = await db.collection('CALENDAR_EVENT').find({
             userId: userId, 
             $or: [
@@ -326,7 +230,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('COP4331Cards');
+            const db = client.db('sample_mflix');
             const result = await db.collection('CALENDAR_EVENT').deleteOne({
             _id: new ObjectId(_id),
             userId: userId
@@ -357,7 +261,7 @@ exports.setApp = function( app, client )
         res.status(200).json(ret);
     });
 
-     app.post('/api/editevent', async (req, res, next) =>
+    app.post('/api/editevent', async (req, res, next) =>
     {
         // incoming: userId, _id date, time, name, event_type, friend_id, notes
         // outgoing: error
@@ -382,7 +286,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('COP4331Cards');
+            const db = client.db('sample_mflix');
             const result = await db.collection('CALENDAR_EVENT').updateOne(
             {
                 _id: new ObjectId(_id),
@@ -397,6 +301,225 @@ exports.setApp = function( app, client )
                     name: name,
                     notes: notes,
                     time: time
+                }
+            });
+            if(result.matchedCount === 0)
+            {
+                error = 'Event could not be updated'
+            }
+        }
+        catch(e)
+        {
+            error = e.toString();
+        }
+
+        var refreshedToken = null;
+        try
+        {
+            refreshedToken = token.refresh(jwtToken);;
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var ret = { error: error, jwtToken:refreshedToken };
+
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/addfriend', async (req, res, next) =>
+    {
+        // incoming: friend_id, firstName, lastName, userId, jwtToken
+        // outgoing: error
+
+        const { friend_id, firstName, lastName, userId, jwtToken } = req.body;
+
+        try
+        {
+            if( token.isExpired(jwtToken))
+            {
+                var r = {error:'The JWT is no longer valid',jwtToken: ''};
+                res.status(200).json(r);
+                return;
+            }
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        const newEvent = {friend_id:friend_id,firstName:firstName,lastName:lastName,userId:userId};
+        var error = '';
+
+        try
+        {
+            const db = client.db('sample_mflix');
+            const result = db.collection('FRIENDS').insertOne(newEvent);
+        }
+        catch(e)
+        {
+            error = e.toString();
+        }
+
+        var refreshedToken = null;
+        try
+        {
+            refreshedToken = token.refresh(jwtToken);;
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var ret = { error: error, jwtToken:refreshedToken };
+
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/searchfriend', async (req, res, next) =>
+    {
+        // incoming: userId, search
+        // outgoing: results[], error
+
+        var error = '';
+
+        const { userId, search, jwtToken } = req.body;
+
+        try
+        {
+            if( token.isExpired( jwtToken ))
+            {
+                var r = {error:'The JWT is no longer valid',jwtToken: ''};
+                res.status(200).json(r);
+                return;
+            }
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var _search = search.trim();
+        
+        const db = client.db('sample_mflix');
+        const results = await db.collection('FRIENDS').find({
+            userId: userId, 
+            $or: [
+                    {friend_id: {$regex:_search+'.*', $options:'i'}},
+                    {firstName: {$regex:_search+'.*', $options:'i'}},
+                    {lastName: {$regex:_search+'.*', $options:'i'}}
+            ] }).toArray();
+        
+        var _ret = results;
+        
+        var refreshedToken = null;
+        try
+        {
+            refreshedToken = token.refresh(jwtToken);;
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var ret = {results:_ret, error:error, jwtToken:refreshedToken};
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/deletefriend', async (req, res, next) =>
+    {
+        // incoming: userId, _id
+        // outgoing: error
+
+        const { userId, _id, jwtToken } = req.body;
+
+        try
+        {
+            if( token.isExpired(jwtToken))
+            {
+                var r = {error:'The JWT is no longer valid',jwtToken: ''};
+                res.status(200).json(r);
+                return;
+            }
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var error = '';
+
+        try
+        {
+            const db = client.db('sample_mflix');
+            const result = await db.collection('FRIENDS').deleteOne({
+            _id: new ObjectId(_id),
+            userId: userId
+            });
+
+            if(result.deletedCount === 0)
+            {
+                error = 'Event not found';
+            }
+        }
+        catch(e)
+        {
+            error = e.toString();
+        }
+
+        var refreshedToken = null;
+        try
+        {
+            refreshedToken = token.refresh(jwtToken);;
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var ret = { error: error, jwtToken:refreshedToken };
+
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/editfriend', async (req, res, next) =>
+    {
+        // incoming: userId, _id, friend_id, firstName, lastName
+        // outgoing: error
+
+        const { _id, friend_id, firstName, lastName, userId, jwtToken } = req.body;
+
+        try
+        {
+            if( token.isExpired(jwtToken))
+            {
+                var r = {error:'The JWT is no longer valid',jwtToken: ''};
+                res.status(200).json(r);
+                return;
+            }
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var error = '';
+
+        try
+        {
+            const db = client.db('sample_mflix');
+            const result = await db.collection('FRIENDS').updateOne(
+            {
+                _id: new ObjectId(_id),
+                userId: userId
+            },
+            {
+                $set:
+                {
+                    friend_id: friend_id,
+                    firstName: firstName,
+                    lastName: lastName
                 }
             });
             if(result.matchedCount === 0)

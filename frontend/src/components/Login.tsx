@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { storeToken, retrieveToken } from '../tokenStorage.ts';
 import { buildPath } from './Path.ts';
@@ -24,42 +23,57 @@ function Login()
         var obj = {login:loginName,password:loginPassword};
         var js = JSON.stringify(obj);
 
-        var config =
+        try
         {
-            method: 'post',
-            url: buildPath('api/login'),
-            headers:
-            {
-                'Content-Type': 'application/json'
-            },
-            data: js
-        };
+            const response = await
+            fetch(buildPath('api/login'),
+            {method:'POST',body:js,headers:{'Content-Type':
+            'application/json'}});
 
-        axios(config)
-        .then(function (response)
-        {
-            var res = response.data;
-            if (res.error)
+            var res = JSON.parse(await response.text());
+
+            const { accessToken } = res;
+            storeToken( res );
+            const decoded = jwtDecode<JwtPayload>(accessToken);
+
+            try
             {
-                setMessage('User/Password combination incorrect');
-            }
-            else
-            {
-                storeToken(res);
-                var ud = jwtDecode<JwtPayload>(retrieveToken());
+                var ud = decoded
                 var userId = ud.userId;
                 var firstName = ud.firstName;
                 var lastName = ud.lastName;
 
-                var user = {firstName:firstName,lastName:lastName,id:userId}
-                localStorage.setItem('user_data', JSON.stringify(user));
-                window.location.href = '/calendar';
+                if ( userId.length <= 0 )
+                {
+                    setMessage('User/Password combination incorrect');
+                }
+                else
+                {
+                    var user = {firstName:firstName,lastName:lastName,id:userId}
+                    localStorage.setItem('user_data', JSON.stringify(user));
+                    window.location.href = '/calendar';
+                }
             }
-        })
-        .catch(function (error)
+            catch(e)
+            {
+                console.log(e);
+                return;
+            }
+        }
+        catch(error:any)
         {
-        console.log(error);
-        });
+            setMessage(error.toString());
+            return;
+        }
+    }
+
+    function handleSetLoginName( e: any ) : void
+    {
+        setLoginName(e.target.value);
+    }
+    function handleSetLoginPassword( e: any ) : void
+    {
+        setLoginPassword(e.target.value);
     }
 
     return(
@@ -70,14 +84,14 @@ function Login()
                 id="loginName" 
                 placeholder="Username" 
                 value={loginName}
-                onChange={(e) => setLoginName(e.target.value)} 
+                onChange={handleSetLoginName} 
             /><br />
             <input 
                 type="password" 
                 id="loginPassword" 
                 placeholder="Password" 
                 value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
+                onChange={handleSetLoginPassword}
             /><br />
             <input 
                 type="submit" 

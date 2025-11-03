@@ -5,7 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 
 interface JwtPayload
 {
-    id: string;
+    userId: string;
     firstName: string;
     lastName: string;
 }
@@ -48,7 +48,7 @@ function SignUp()
             try
             {
                 var ud = decoded
-                var userId = ud.id;
+                var userId = ud.userId;
                 var userfirstName = ud.firstName;
                 var userlastName = ud.lastName;
 
