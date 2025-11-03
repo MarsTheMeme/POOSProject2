@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { storeToken, retrieveToken } from '../tokenStorage.ts';
+import { storeToken, } from '../tokenStorage.ts';
 import { buildPath } from './Path.ts';
 
 interface JwtPayload {

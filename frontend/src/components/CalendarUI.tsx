@@ -1,4 +1,4 @@
-import React, { use, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { buildPath } from './Path.ts';
 import { retrieveToken, storeToken } from '../tokenStorage.ts';
 
