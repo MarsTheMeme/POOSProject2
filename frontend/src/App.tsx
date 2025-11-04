@@ -3,7 +3,6 @@ import './App.css';
 
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-import CardPage from './pages/CardPage';
 import CalendarPage from "./pages/CalendarPage";
 
 function App() {
@@ -12,7 +11,6 @@ function App() {
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
-      <Route path="/cards" element={<CardPage />} />
       <Route path="/calendar" element={<CalendarPage />} />
     </Routes>
     </BrowserRouter>

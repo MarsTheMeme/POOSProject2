@@ -1,14 +1,8 @@
-import PageTitle from '../components/PageTitle.tsx';
 import SignUp from '../components/SignUp.tsx';
 
-const LoginPage = () =>
-{
-    return(
-        <div>
-        <PageTitle />
-        <SignUp />
-        </div>
-    );
-};
+   const SignUpPage = () =>
+   {
+       return <SignUp />;
+   };
 
-export default LoginPage;
+   export default SignUpPage;

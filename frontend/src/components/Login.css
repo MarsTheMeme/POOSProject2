@@ -1,0 +1,272 @@
+/* Login Container - Full screen with gradient background */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #00C6FF 0%, #0090D9 100%);
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+/* Main login card */
+.login-card {
+    background: white;
+    border-radius: 40px;
+    width: 100%;
+    max-width: 480px;
+    padding: 50px 40px 60px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    position: relative;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* App Logo */
+.app-logo {
+    font-size: 48px;
+    font-weight: 700;
+    color: #000;
+    text-align: center;
+    margin-bottom: 60px;
+    letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Welcome title */
+.welcome-title {
+    font-size: 32px;
+    font-weight: 400;
+    color: #000;
+    text-align: center;
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+}
+
+/* Form container */
+.login-form {
+    width: 100%;
+}
+
+/* Input group wrapper */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* Icon container */
+.input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Input fields */
+.login-input {
+    width: 100%;
+    padding: 16px 16px 16px 48px;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #000;
+    background: #F9FAFB;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: #0090D9;
+    background: #FFFFFF;
+}
+
+.login-input::placeholder {
+    color: #9CA3AF;
+    font-weight: 400;
+}
+
+/* Password toggle button */
+.password-toggle {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+}
+
+.password-toggle:hover {
+    opacity: 0.7;
+}
+
+/* Error message */
+.error-message {
+    color: #DC2626;
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+    padding: 8px;
+    background: #FEE2E2;
+    border-radius: 8px;
+}
+
+/* Button base styles */
+.btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Primary button (Sign In) */
+.btn-primary {
+    background: #0B1F3F;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #162B4D;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(11, 31, 63, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Secondary button (Sign Up) */
+.btn-secondary {
+    background: white;
+    color: #0B1F3F;
+    border: 2px solid #E5E7EB;
+}
+
+.btn-secondary:hover {
+    background: #F9FAFB;
+    border-color: #0090D9;
+}
+
+/* Forgot password link */
+.forgot-password {
+    display: block;
+    text-align: center;
+    color: #6B7280;
+    font-size: 14px;
+    text-decoration: none;
+    margin: 24px 0;
+    transition: color 0.2s;
+}
+
+.forgot-password:hover {
+    color: #0090D9;
+}
+
+/* Test buttons container */
+.test-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #E5E7EB;
+}
+
+/* Test button styles */
+.btn-test {
+    width: 100%;
+    padding: 12px 16px;
+    background: white;
+    color: #6B7280;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-test:hover {
+    border-color: #0090D9;
+    color: #0090D9;
+    background: #F0F9FF;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Focus visible for accessibility */
+.btn:focus-visible,
+.login-input:focus-visible {
+    outline: 2px solid #0090D9;
+    outline-offset: 2px;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 0;
+    }
+
+    .login-card {
+        max-width: 100%;
+        min-height: 100vh;
+        border-radius: 40px 40px 0 0;
+        padding: 60px 24px 40px;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .app-logo {
+        font-size: 40px;
+        margin-bottom: 40px;
+    }
+
+    .welcome-title {
+        font-size: 28px;
+        margin-bottom: 32px;
+    }
+
+    .login-input {
+        padding: 14px 14px 14px 44px;
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+
+    .btn {
+        padding: 14px;
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+}
