@@ -103,6 +103,7 @@ function Login()
                     setMessage('Account login successful!');
                     setTimeout(() => {
                         window.location.href = '/calendar';
+                        setMessage('');
                     }, 1000);
                 }
             }

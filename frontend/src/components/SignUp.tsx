@@ -100,6 +100,7 @@ function SignUp()
                 setMessage('Account created successfully!');
                 setTimeout(() => {
                     window.location.href = '/calendar';
+                    setMessage('');
                 }, 1000);
             }
             catch(tokenError) 
