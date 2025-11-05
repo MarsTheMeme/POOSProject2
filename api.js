@@ -457,7 +457,7 @@ exports.setApp = function( app, client )
                     {friend_id: {$regex:_search+'.*', $options:'i'}},
                     {FirstName: {$regex:_search+'.*', $options:'i'}},
                     {LastName: {$regex:_search+'.*', $options:'i'}},
-                    {nickname: {$regex:_search+'.*', $options:'i'}}
+                    {Nickname: {$regex:_search+'.*', $options:'i'}}
             ] }).toArray();
         
         var _ret = results;
