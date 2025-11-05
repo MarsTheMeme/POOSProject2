@@ -455,8 +455,8 @@ exports.setApp = function( app, client )
             userId: userId, 
             $or: [
                     {friend_id: {$regex:_search+'.*', $options:'i'}},
-                    {firstName: {$regex:_search+'.*', $options:'i'}},
-                    {lastName: {$regex:_search+'.*', $options:'i'}},
+                    {FirstName: {$regex:_search+'.*', $options:'i'}},
+                    {LastName: {$regex:_search+'.*', $options:'i'}},
                     {nickname: {$regex:_search+'.*', $options:'i'}}
             ] }).toArray();
         
