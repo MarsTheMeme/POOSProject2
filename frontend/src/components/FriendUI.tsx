@@ -19,8 +19,7 @@ function FriendUI({ className = '' }: FriendUIProps)
     const [search,setSearchValue] = React.useState('');
     const [id, setId] = React.useState('');
     const [friendId,setFriendId] = React.useState('');
-    const [firstName,setFirstName] = React.useState('');
-    const [lastName,setLastName] = React.useState('');
+    const [nickname,setNickname] = React.useState('');
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     const [allFriends, setAllFriends] = useState<any[]>([]);
 
@@ -43,7 +42,7 @@ function FriendUI({ className = '' }: FriendUIProps)
     {
         e.preventDefault();
 
-        var obj = {friend_id: friendId, firstName: firstName, lastName: lastName, userId: userId, jwtToken:retrieveToken()};
+        var obj = {friend_id: friendId, nickname: nickname, userId: userId, jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -58,13 +57,9 @@ function FriendUI({ className = '' }: FriendUIProps)
 
             if( res.error &&res.error.length > 0 )
             {
+                setMessage( res.error );
                 handleTokenExpiration(res.error);
                 return;
-            }
-
-            if( res.error.length > 0 )
-            {
-                setMessage( "API Error:" + res.error );
             }
             else
             {
@@ -160,20 +155,18 @@ function FriendUI({ className = '' }: FriendUIProps)
         await loadAllFriends();
     };
 
-    function populateFriend(_id:string, friend_id:string, firstName:string, lastName:string) : void
+    function populateFriend(_id:string, friend_id:string, nickname:string) : void
     {
         setId( _id );
         setFriendId( friend_id );
-        setFirstName( firstName );
-        setLastName( lastName );
+        setNickname( nickname );
     }
 
     function clearEdit() : void
     {
         setId( '' );
         setFriendId( '' );
-        setFirstName( '' );
-        setLastName( '' );
+        setNickname( '' );
     }
 
     async function editFriend(e:any) : Promise<void>
@@ -186,7 +179,7 @@ function FriendUI({ className = '' }: FriendUIProps)
             return;
         }
 
-        var obj = {_id:id,userId:userId,friend_id:friendId,firstName:firstName,lastName:lastName,jwtToken:retrieveToken()};
+        var obj = {_id:id,userId:userId,friend_id:friendId,nickname:nickname,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -235,13 +228,9 @@ function FriendUI({ className = '' }: FriendUIProps)
     {
         setFriendId( e.target.value );
     }
-    function handleSetFirstName( e:any ) : void
+    function handleSetNickname( e:any ) : void
     {
-        setFirstName( e.target.value )
-    }
-    function handleSetLastName( e: any ) : void
-    {
-        setLastName( e.target.value );
+        setNickname( e.target.value );
     }
 
     async function loadAllFriends() : Promise<void>
@@ -294,12 +283,13 @@ function FriendUI({ className = '' }: FriendUIProps)
                     {friendList.map((friend, index) => (
                         <div key={index} style={{border: '1px solid #ccc', margin: '10px', padding: '10px'}}>
                             <p><strong>FriendID:</strong> {friend.friend_id}</p>
-                            <p><strong>First Name:</strong> {friend.firstName}</p>
-                            <p><strong>Last Name:</strong> {friend.lastName}</p>
+                            <p><strong>Nickname:</strong> {friend.Nickname}</p>
+                            <p><strong>First Name:</strong> {friend.FirstName}</p>
+                            <p><strong>Last Name:</strong> {friend.LastName}</p>
                             <button type="button" id="deleteFriendButton" className="buttons"
                             onClick={() => deleteFriend(friend._id,friend.userId)}> Delete Friend </button><br /><br />
                             <button type="button" id="populateEditFriend" className="buttons"
-                            onClick={() => populateFriend(friend._id,friend.friend_id,friend.firstName,friend.lastName)}> Edit Friend </button><br />
+                            onClick={() => populateFriend(friend._id,friend.friend_id,friend.nickname)}> Edit Friend </button><br />
                         </div>
                     ))}
                 </div>
@@ -307,10 +297,8 @@ function FriendUI({ className = '' }: FriendUIProps)
             <div className="subheading">Add / Edit Friend</div>
             <input type="text" id="cardText" placeholder="FriendID" value={friendId}
             onChange={handleSetFriendId} />
-            <input type="text" id="cardText" placeholder="First Name" value={firstName}
-            onChange={handleSetFirstName} />
-            <input type="text" id="cardText" placeholder="Last Name" value={lastName}
-            onChange={handleSetLastName} />
+            <input type="text" id="cardText" placeholder="Nickname" value={nickname}
+            onChange={handleSetNickname} />
             <div className="form-actions">
                 <button type="button" id="addFriendButton" className="buttons"
                 onClick={addFriend}>Add Friend</button>
@@ -328,14 +316,14 @@ function FriendUI({ className = '' }: FriendUIProps)
                     {allFriends.map((friend, index) => (
                         <div key={friend._id ?? index} className="friend-item">
                             <div className="friend-item-header">
-                                <span className="friend-item-name">{friend.firstName} {friend.lastName}</span>
+                                <span className="friend-item-name">{friend.FirstName} {friend.LastName}</span>
                                 <span className="friend-item-id">ID: {friend.friend_id}</span>
                             </div>
                             <div className="friend-item-actions">
                                 <button
                                     type="button"
                                     className="buttons"
-                                    onClick={() => populateFriend(friend._id, friend.friend_id, friend.firstName, friend.lastName)}
+                                    onClick={() => populateFriend(friend._id, friend.friend_id, friend.nickname)}
                                 >
                                     Edit Friend
                                 </button>

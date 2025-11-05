@@ -10,6 +10,7 @@ interface JwtPayload
     userId: string;
     firstName: string;
     lastName: string;
+    friend_id: string;
 }
 
 function SignUp()
@@ -19,13 +20,14 @@ function SignUp()
     const [password,setPassword] = React.useState('');
     const [firstName,setFirstName] = React.useState('');
     const [lastName,setLastName] = React.useState('');
+    const [friendID, setFriendID] = React.useState('');
     const [showPassword, setShowPassword] = useState(false);
 
     async function doSignUp(e:any) : Promise<void>
     {
         e.preventDefault();
 
-        var obj = {Login:login,Password:password,FirstName:firstName,LastName:lastName};
+        var obj = {Login:login,Password:password,FirstName:firstName,LastName:lastName,friend_id:friendID};
         var js = JSON.stringify(obj);
 
         try
@@ -89,12 +91,15 @@ function SignUp()
                 const userId = decoded.userId;
                 const userfirstName = decoded.firstName;
                 const userlastName = decoded.lastName;
+                const userFriendID = decoded.friend_id;
 
                 const user =
                 {
                     firstName:userfirstName,
                     lastName:userlastName,
-                    id:userId
+                    id:userId,
+                    friend_id:userFriendID
+                    
                 }
                 localStorage.setItem('user_data', JSON.stringify(user));
                 
@@ -143,6 +148,10 @@ function SignUp()
     function handleSetLastName( e: any ) : void
     {
         setLastName( e.target.value );
+    }
+    function handleSetFriendID( e: any ) : void
+    {
+        setFriendID( e.target.value );
     }
     function handleSetShowPassword() : void
     {
@@ -196,13 +205,30 @@ function SignUp()
                     <div className="input-group">
                         <div className="input-icon">
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 10C12.2091 10 14 8.20914 14 6C14 3.79086 12.2091 2 10 2C7.79086 2 6 3.79086 6 6C6 8.20914 7.79086 10 10 10Z" stroke="#9CA3AF" strokeWidth="2"/>
+                                <path d="M4 18C4 14.6863 6.68629 12 10 12C13.3137 12 16 14.6863 16 18" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <input 
+                            type="text" 
+                            placeholder="Friend ID" 
+                            value={friendID}
+                            onChange={handleSetFriendID}
+                            className="login-input"
+                            required
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <div className="input-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M3 5C3 3.89543 3.89543 3 5 3H15C16.1046 3 17 3.89543 17 5V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="#9CA3AF" strokeWidth="2"/>
                                 <path d="M3 7L10 11L17 7" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>
                         <input 
                             type="text" 
-                            placeholder="Email/Username" 
+                            placeholder="Email" 
                             value={login}
                             onChange={handleSetLogin}
                             className="login-input"

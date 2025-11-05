@@ -21,12 +21,14 @@ exports.setApp = function( app, client )
         var id = -1;
         var fn = '';
         var ln = '';
+        var fid = '';
 
         if( results.length > 0 )
         {
             id = results[0]._id.toString(); // id from mongoDB
             fn = results[0].FirstName;
             ln = results[0].LastName;
+            fid = results[0].friend_id;
 
             var ret;
             
@@ -34,7 +36,7 @@ exports.setApp = function( app, client )
             {
                 const token = require('./createJWT.js');
                 retToken = token.createToken( fn, ln, id );
-                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: fn, lastName: ln};
+                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: fn, lastName: ln, friend_id: fid };
             }
             catch(e)
             {
@@ -51,15 +53,15 @@ exports.setApp = function( app, client )
 
     app.post('/api/signup', async (req, res, next) =>
     {
-        // incoming: login, password, firstName, lastName
+        // incoming: login, password, firstName, lastName, friend_id
         // outgoing: id, firstName, lastName, error
 
         var error = '';
         
-        const { Login:login, Password:password, FirstName:firstName, LastName:lastName } = req.body;
+        const { Login:login, Password:password, FirstName:firstName, LastName:lastName, friend_id: friend_id} = req.body;
 
         // Check for missing fields
-        if( !login || !password || !firstName || !lastName || login.trim().length === 0 || password.trim().length === 0 || firstName.trim().length === 0 || lastName.trim().length === 0 )
+        if( !login || !password || !firstName || !lastName || !friend_id || login.trim().length === 0 || password.trim().length === 0 || firstName.trim().length === 0 || lastName.trim().length === 0 || friend_id.trim().length === 0 )
         {
             var ret = { error:'All fields are required' };
             res.status(200).json(ret);
@@ -72,13 +74,23 @@ exports.setApp = function( app, client )
         db.collection('USERS').find({Login:login}).toArray();
         if( results.length > 0 )
         {
-            var ret = { error:'Username already exists' };
+            var ret = { error:'Email already exists' };
+            res.status(200).json(ret);
+            return;
+        }
+
+        // Check for existing friend_id
+        const resultsFriend = await
+        db.collection('USERS').find({friend_id:friend_id}).toArray();
+        if( resultsFriend.length > 0 )
+        {
+            var ret = { error:'Friend ID already exists' };
             res.status(200).json(ret);
             return;
         }
 
         // Add new user
-        const newUser = {Login:login,Password:password,FirstName:firstName,LastName:lastName};
+        const newUser = {Login:login,Password:password,FirstName:firstName,LastName:lastName, friend_id:friend_id};
 
         try
         {
@@ -88,7 +100,7 @@ exports.setApp = function( app, client )
             {
                 const token = require('./createJWT.js');
                 retToken = token.createToken( firstName, lastName, id );
-                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: firstName, lastName: lastName, error: '' };
+                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: firstName, lastName: lastName, friend_id: friend_id, error: '' };
             }
             catch(e)
             {
@@ -330,10 +342,10 @@ exports.setApp = function( app, client )
 
     app.post('/api/addfriend', async (req, res, next) =>
     {
-        // incoming: friend_id, firstName, lastName, userId, jwtToken
+        // incoming: friend_id, nickName, userId, jwtToken
         // outgoing: error
 
-        const { friend_id, firstName, lastName, userId, jwtToken } = req.body;
+        const { friend_id, nickname, userId, jwtToken } = req.body;
 
         try
         {
@@ -349,17 +361,53 @@ exports.setApp = function( app, client )
             console.log(e.message);
         }
 
-        const newEvent = {friend_id:friend_id,firstName:firstName,lastName:lastName,userId:userId};
-        var error = '';
+        const db = client.db('sample_mflix');
 
-        try
+        // Check for existing friend_id
+        const resultsFriend = await
+        db.collection('USERS').find({friend_id:friend_id}).toArray();
+
+        var fid = '';
+        var firstName = '';
+        var lastName = '';
+
+        if( resultsFriend.length > 0 )
         {
-            const db = client.db('sample_mflix');
-            const result = db.collection('FRIENDS').insertOne(newEvent);
+            // Check if already friends
+            const existingFriend = await db.collection('FRIENDS').findOne({ friend_id: friend_id, userId: userId });
+
+            if (existingFriend) 
+            {
+                var ret = { error: error, jwtToken:refreshedToken };
+                ret.error = 'You Are Already Friends';
+                res.status(200).json(ret);
+                return;
+            }
+            else
+            {
+                fid = resultsFriend[0].friend_id;
+                firstName = resultsFriend[0].FirstName;
+                lastName = resultsFriend[0].LastName;
+
+                const newEvent = {friend_id:fid,FirstName:firstName,LastName:lastName,Nickname:nickname,userId:userId};
+                var error = '';
+
+                try
+                {
+                    const result = db.collection('FRIENDS').insertOne(newEvent);
+                }
+                catch(e)
+                {
+                    error = e.toString();
+                }
+            }
         }
-        catch(e)
+        else
         {
-            error = e.toString();
+            var ret = { error: error, jwtToken:refreshedToken };
+            ret.error = 'Friend ID does not exists';
+            res.status(200).json(ret);
+            return;
         }
 
         var refreshedToken = null;
@@ -408,7 +456,8 @@ exports.setApp = function( app, client )
             $or: [
                     {friend_id: {$regex:_search+'.*', $options:'i'}},
                     {firstName: {$regex:_search+'.*', $options:'i'}},
-                    {lastName: {$regex:_search+'.*', $options:'i'}}
+                    {lastName: {$regex:_search+'.*', $options:'i'}},
+                    {nickname: {$regex:_search+'.*', $options:'i'}}
             ] }).toArray();
         
         var _ret = results;
@@ -460,7 +509,7 @@ exports.setApp = function( app, client )
 
             if(result.deletedCount === 0)
             {
-                error = 'Event not found';
+                error = 'Firned not found';
             }
         }
         catch(e)
@@ -488,7 +537,7 @@ exports.setApp = function( app, client )
         // incoming: userId, _id, friend_id, firstName, lastName
         // outgoing: error
 
-        const { _id, friend_id, firstName, lastName, userId, jwtToken } = req.body;
+        const { _id, friend_id, nickname, userId, jwtToken } = req.body;
 
         try
         {
@@ -518,13 +567,12 @@ exports.setApp = function( app, client )
                 $set:
                 {
                     friend_id: friend_id,
-                    firstName: firstName,
-                    lastName: lastName
+                    nickname: nickname
                 }
             });
             if(result.matchedCount === 0)
             {
-                error = 'Event could not be updated'
+                error = 'Friend could not be updated'
             }
         }
         catch(e)
