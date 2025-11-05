@@ -2,7 +2,7 @@ export function storeToken( tok:any ) : any
 {
     try
     {
-     localStorage.setItem('token_data', tok.accessToken.token);
+     localStorage.setItem('token_data', tok.accessToken);
     }
     catch(e)
     {

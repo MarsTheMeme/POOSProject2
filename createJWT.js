@@ -12,7 +12,7 @@ _createToken = function ( fn, ln, id )
     {
         const user = { userId: id, firstName: fn, lastName: ln };
         const accesstoken = jwt.sign( user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '24h' } );
-        return { accessToken: accesstoken };
+        return { token: accesstoken };
     }
     catch(e)
     {

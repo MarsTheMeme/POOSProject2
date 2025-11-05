@@ -31,7 +31,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('sample_mflix');
+            const db = client.db('COP4331Cards');
             const result = db.collection('Cards').insertOne(newCard);
         }
         catch(e)
@@ -63,9 +63,9 @@ exports.setApp = function( app, client )
 
         const { login, password } = req.body;
 
-        const db = client.db('sample_mflix');
+        const db = client.db('COP4331Cards');
         const results = await
-        db.collection('USERS').find({Login:login,Password:password}).toArray();
+        db.collection('Users').find({Login:login,Password:password}).toArray();
         
         var id = -1;
         var fn = '';
@@ -82,8 +82,7 @@ exports.setApp = function( app, client )
             try
             {
                 const token = require('./createJWT.js');
-                retToken = token.createToken( fn, ln, id );
-                ret = { accessToken: retToken, id: id, Login: login, firstName: fn, lastName: ln, error: '' };
+                ret = token.createToken( fn, ln, id );
             }
             catch(e)
             {
@@ -116,9 +115,9 @@ exports.setApp = function( app, client )
         }
 
         // Check for existing username
-        const db = client.db('sample_mflix');
+        const db = client.db('COP4331Cards');
         const results = await
-        db.collection('USERS').find({Login:login}).toArray();
+        db.collection('Users').find({Login:login}).toArray();
         if( results.length > 0 )
         {
             var ret = { error:'Username already exists' };
@@ -131,13 +130,13 @@ exports.setApp = function( app, client )
 
         try
         {
-            const result = await db.collection('USERS').insertOne(newUser);
+            const result = await db.collection('Users').insertOne(newUser);
             var id = result.insertedId.toString();
             try
             {
                 const token = require('./createJWT.js');
-                retToken = token.createToken( firstName, lastName, id );
-                ret = { accessToken: retToken, id: id, Login: login, firstName: firstName, lastName: lastName, error: '' };
+                ret = token.createToken( firstName, lastName, id );
+                ret.error = '';
             }
             catch(e)
             {
@@ -178,7 +177,7 @@ exports.setApp = function( app, client )
 
         var _search = search.trim();
         
-        const db = client.db('sample_mflix');
+        const db = client.db('COP4331Cards');
         const results = await db.collection('Cards').find({"Card":{$regex:_search+'.*', $options:'i'}}).toArray();
         
         var _ret = [];
@@ -227,7 +226,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('sample_mflix');
+            const db = client.db('COP4331Cards');
             const result = db.collection('CALENDAR_EVENT').insertOne(newEvent);
         }
         catch(e)
@@ -275,7 +274,7 @@ exports.setApp = function( app, client )
 
         var _search = search.trim();
         
-        const db = client.db('sample_mflix');
+        const db = client.db('COP4331Cards');
         const results = await db.collection('CALENDAR_EVENT').find({
             userId: userId, 
             $or: [
@@ -327,7 +326,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('sample_mflix');
+            const db = client.db('COP4331Cards');
             const result = await db.collection('CALENDAR_EVENT').deleteOne({
             _id: new ObjectId(_id),
             userId: userId
@@ -383,7 +382,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const db = client.db('sample_mflix');
+            const db = client.db('COP4331Cards');
             const result = await db.collection('CALENDAR_EVENT').updateOne(
             {
                 _id: new ObjectId(_id),
