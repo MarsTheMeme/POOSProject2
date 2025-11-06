@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { buildPath } from './Path.ts';
 import { retrieveToken, storeToken } from '../tokenStorage.ts';
 
-function CalendarUI()
+type CalendarUIProps = {
+    friendCard?: React.ReactNode;
+};
+
+function CalendarUI({ friendCard }: CalendarUIProps)
 {
     let _ud : any = localStorage.getItem('user_data');
     let ud = JSON.parse( _ud );
@@ -21,11 +25,15 @@ function CalendarUI()
     const [notes,setNotes] = React.useState('');
     const [time,setTime] = React.useState('');
     const [eventList, setEventList] = useState<any[]>([]); // stores events in a list
+    const [dueDate, setDueDate] = React.useState('');
+    const [allEvents, setAllEvents] = useState<any[]>([]);
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
+    const [isSearchExpanded, setIsSearchExpanded] = useState(true);
     
     useEffect(() => {
         // Fetch friend list on component mount
         loadFriends();
+        loadAllEvents();
     }, []);
 
     function handleTokenExpiration(error: string) : void
@@ -71,6 +79,39 @@ function CalendarUI()
         }
     }
 
+    async function loadAllEvents() : Promise<void>
+    {
+        const obj = {userId:userId,search:'',jwtToken:retrieveToken()};
+        const js = JSON.stringify(obj);
+
+        try
+        {
+            const response = await fetch(buildPath('api/searchevents'),
+            {method:'POST',body:js,headers:{'Content-Type':
+            'application/json'}});
+
+            let txt = await response.text();
+            let res = JSON.parse(txt);
+
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
+
+            const results = Array.isArray(res.results) ? res.results : [];
+            setAllEvents(results);
+            if(res.jwtToken)
+            {
+                storeToken(res.jwtToken);
+            }
+        }
+        catch(error:any)
+        {
+            console.log(error.toString());
+        }
+    }
+
     function getFriendNames(friendIds: string): string
     {
         if (!friendIds) return 'No Friends';
@@ -86,7 +127,7 @@ function CalendarUI()
     {
         e.preventDefault();
         const friendIds = selectedFriends.join(',');
-        var obj = {date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        var obj = {date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,dueDate:dueDate,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -113,6 +154,7 @@ function CalendarUI()
             {
                 setMessage('Event has been added');
                 storeToken( res.jwtToken );
+                await loadAllEvents();
             }
         }
         catch(error:any)
@@ -124,6 +166,7 @@ function CalendarUI()
     async function searchEvent(e:any) : Promise<void>
     {
         e.preventDefault();
+        setIsSearchExpanded(true);
 
         var obj = {userId:userId,search:search,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
@@ -196,10 +239,11 @@ function CalendarUI()
             alert(error.toString());
             setResults(error.toString());
         }
-        setEventList(eventList.filter(e => e._id !== _id));
+        setEventList(prev => prev.filter(e => e._id !== _id));
+        await loadAllEvents();
     };
 
-    function populateEvent(_id:string, date:string, time:string, name:string, event_type:string, notes:string, friend_id:string) : void
+    function populateEvent(_id:string, date:string, time:string, name:string, event_type:string, notes:string, friend_id:string, due_date?:string) : void
     {
         setEventId( _id );
         setDate( date );
@@ -208,6 +252,7 @@ function CalendarUI()
         setSelectedFriends( friend_id ? friend_id.split(',') : [] );
         setNotes (notes );
         setTime( time );
+        setDueDate(due_date || '');
     }
 
     function clearEdit() : void
@@ -219,6 +264,7 @@ function CalendarUI()
         setType('');
         setSelectedFriends([]);
         setNotes('');
+        setDueDate('');
     }
 
     async function editEvent(e:any) : Promise<void>
@@ -232,7 +278,7 @@ function CalendarUI()
         }
 
         const friendIds = selectedFriends.join(',');
-        var obj = {_id:eventId,date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        var obj = {_id:eventId,date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,dueDate:dueDate,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -260,6 +306,7 @@ function CalendarUI()
                 setMessage('Event has been edited');
                 storeToken( res.jwtToken );
                 clearEdit();
+                await loadAllEvents();
                 
                 // recall searchEvent (need fake event for preventDefault to not cause errors)
                 await searchEvent({preventDefault: () => {}});
@@ -309,70 +356,159 @@ function CalendarUI()
     {
         setTime( e.target.value );
     }
+    function handleSetDueDate( e: any ) : void
+    {
+        setDueDate( e.target.value );
+    }
 
     return(
-        <div id="cardUIDiv">
-            <br />
-            Search: <input type="text" id="searchText" placeholder="Event To Search For"
-            onChange={handleSearchTextChange} />
-            <button type="button" id="searchCardButton" className="buttons"
-            onClick={searchEvent}> Search Event</button><br />
-            <span id="cardSearchResult">{searchResults}</span><br />
-            {eventList.length > 0 && (
-                <div id="searchResultsList">
-                    {eventList.map((event, index) => (
-                        <div key={index} style={{border: '1px solid #ccc', margin: '10px', padding: '10px'}}>
-                            <p><strong>Date:</strong> {event.date}</p>
-                            <p><strong>Time:</strong> {event.time}</p>
-                            <p><strong>Name:</strong> {event.name}</p>
-                            <p><strong>Type:</strong> {event.event_type}</p>
-                            <p><strong>Notes:</strong> {event.notes}</p>
-                            {event.friend_id && <p><strong>Friend:</strong> {getFriendNames(event.friend_id)}</p>}
-                            <button type="button" id="deleteEventButton" className="buttons"
-                            onClick={() => deleteEvent(event._id,event.userId)}> Delete Event </button><br /><br />
-                            <button type="button" id="populateEditEvent" className="buttons"
-                            onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friend_id)}> Edit Event </button><br />
-                        </div>
-                    ))}
+        <div className="calendar-ui">
+            <div id="cardUIDiv" className={`card-section search-card ${isSearchExpanded ? 'expanded' : 'collapsed'}`}>
+                <div className="search-card-header">
+                    <div className="section-heading">Search Events</div>
+                    <button
+                        type="button"
+                        className="collapse-toggle"
+                        aria-expanded={isSearchExpanded}
+                        aria-controls="searchCardContent"
+                        onClick={() => setIsSearchExpanded(prev => !prev)}
+                    >
+                        {isSearchExpanded ? '▴' : '▾'}
+                    </button>
                 </div>
-            )}
-            Add/Edit: <br />
-            <input type="text" id="cardText" placeholder="Date: MM/DD/YYYY" value={date}
-            onChange={handleSetDate} /><br />
-            <input type="text" id="cardText" placeholder="Time: HH:MM AM/PM" value={time}
-            onChange={handleSetTime} /><br />
-            <input type="text" id="cardText" placeholder="Name" value={name}
-            onChange={handleSetName} /><br />
-            <select id="cardText" name="eventType" value={type}
-            onChange={handleSetType} >
-                <option value="">Select Event Type</option>
-                <option value="Home">Home</option>
-                <option value="Work">Work</option>
-                <option value="School">School</option>
-                <option value="Personal">Personal</option>
-                <option value="Other">Other</option>
-            </select><br />
-            <label htmlFor="friendSelect">Select Friends (hold Ctrl/Cmd to select multiple):</label><br />
-            <select
-                id="friendSelect"
-                multiple
-                value={selectedFriends}
-                onChange={handleFriendSelection}
-                style={{ width: '200px', height: '100px' }}
-            >
-                {friendList.map((friend, index) => (
-                    <option key={index} value={friend.friend_id}>
-                        {friend.firstName} {friend.lastName} ({friend.friend_id})
-                    </option>
-                ))}
-            </select><br />
-            <input type="text" id="cardText" placeholder="Notes" value={notes}
-            onChange={handleSetNotes} /><br />
-            <button type="button" id="addEventButton" className="buttons"
-            onClick={addEvent}> Add Event </button><br />
-            <button type="button" id="editEventButton" className="buttons"
-            onClick={editEvent}> Edit Event </button><br />
-            <span id="cardAddResult">{message}</span>
+                <div className="search-row">
+                    <label htmlFor="searchText">Search:</label>
+                    <input type="text" id="searchText" placeholder="Event To Search For"
+                    onChange={handleSearchTextChange} />
+                    <button type="button" id="searchCardButton" className="buttons"
+                    onClick={searchEvent}>Search Event</button>
+                </div>
+                <div
+                    id="searchCardContent"
+                    className={`search-collapsible ${isSearchExpanded ? 'open' : 'collapsed'}`}
+                >
+                    <span id="cardSearchResult">{searchResults}</span>
+                    {eventList.length > 0 && (
+                        <div id="searchResultsList">
+                            {eventList.map((event, index) => (
+                                <div key={index} className="search-result-card">
+                                    <p><strong>Date:</strong> {event.date}</p>
+                                    <p><strong>Time:</strong> {event.time}</p>
+                                    {event.dueDate && <p><strong>Due:</strong> {event.dueDate}</p>}
+                                    <p><strong>Name:</strong> {event.name}</p>
+                                    <p><strong>Type:</strong> {event.event_type}</p>
+                                    <p><strong>Notes:</strong> {event.notes}</p>
+                                        {event.friend_id && <p><strong>Friend:</strong> {getFriendNames(event.friend_id)}</p>}
+                                        {event.dueDate && <p><strong>Due:</strong> {event.dueDate}</p>}
+                                    <div className="result-actions">
+                                        <button type="button" id="deleteEventButton" className="buttons"
+                                        onClick={() => deleteEvent(event._id,event.userId)}>Delete Event</button>
+                                        <button type="button" id="populateEditEvent" className="buttons"
+                                        onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friend_id,event.dueDate)}>Edit Event</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="calendar-lower">
+                <div className="card-section event-card">
+                    <div className="section-heading">Add / Edit Event</div>
+                    <input type="text" id="cardText" placeholder="Date: MM/DD/YYYY" value={date}
+                    onChange={handleSetDate} />
+                    <input type="text" id="cardText" placeholder="Time: HH:MM AM/PM" value={time}
+                    onChange={handleSetTime} />
+                    <input type="text" id="cardText" placeholder="Name" value={name}
+                    onChange={handleSetName} />
+                    <select id="cardText" name="eventType" value={type}
+                    onChange={handleSetType} >
+                        <option value="">Select Event Type</option>
+                        <option value="Home">Home</option>
+                        <option value="Work">Work</option>
+                        <option value="School">School</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <label htmlFor="friendSelect">Select Friends (hold Ctrl/Cmd to select multiple):</label>
+                    <select
+                        id="friendSelect"
+                        className="friend-select"
+                        multiple
+                        value={selectedFriends}
+                        onChange={handleFriendSelection}
+                    >
+                        {friendList.map((friend, index) => (
+                            <option key={index} value={friend.friend_id}>
+                                {friend.firstName} {friend.lastName} ({friend.friend_id})
+                            </option>
+                        ))}
+                    </select>
+                    <input type="text" id="cardText" placeholder="Due Date (optional)" value={dueDate}
+                    onChange={handleSetDueDate} />
+                    <input type="text" id="cardText" placeholder="Notes" value={notes}
+                    onChange={handleSetNotes} />
+                    <div className="form-actions">
+                        <button type="button" id="addEventButton" className="buttons"
+                        onClick={addEvent}>Add Event</button>
+                        <button type="button" id="editEventButton" className="buttons"
+                        onClick={editEvent}>Edit Event</button>
+                    </div>
+                    <span id="cardAddResult">{message}</span>
+                </div>
+                {friendCard}
+                <section className="card-section events-card">
+                    <div className="section-heading">Events</div>
+                    {allEvents.length === 0 ? (
+                        <p className="empty-state">No events yet. Start by adding one above.</p>
+                    ) : (
+                        <div className="events-list">
+                            {allEvents.map((event, index) => (
+                                <div key={event._id ?? index} className="event-item">
+                                    <div className="event-item-header">
+                                        <span className="event-item-name">{event.name || 'Untitled Event'}</span>
+                                        <span className="event-item-type">{event.event_type || 'General'}</span>
+                                    </div>
+                                    <div className="event-item-meta">
+                                        <span><strong>Date:</strong> {event.date || '—'}</span>
+                                        <span><strong>Time:</strong> {event.time || '—'}</span>
+                                        {event.dueDate && <span><strong>Due:</strong> {event.dueDate}</span>}
+                                    </div>
+                                    {event.notes && <p className="event-item-notes">{event.notes}</p>}
+                                    {event.friend_id && (
+                                        <p className="event-item-friends"><strong>Friends:</strong> {getFriendNames(event.friend_id)}</p>
+                                    )}
+                                    <div className="event-item-actions">
+                                        <button
+                                            type="button"
+                                            className="buttons"
+                                            onClick={() => populateEvent(
+                                                event._id,
+                                                event.date,
+                                                event.time,
+                                                event.name,
+                                                event.event_type,
+                                                event.notes,
+                                                event.friend_id,
+                                                event.dueDate
+                                            )}
+                                        >
+                                            Edit Event
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="buttons danger"
+                                            onClick={() => deleteEvent(event._id, event.userId)}
+                                        >
+                                            Delete Event
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            </div>
         </div>
     );
 }
