@@ -1,17 +1,8 @@
 import React, { useState } from 'react';
 import { buildPath } from './Path.ts';
 import { storeToken } from '../tokenStorage.ts';
-import { jwtDecode } from 'jwt-decode';
 import './Login.css';
 import logo from '../assets/p3-logo.svg';
-
-interface JwtPayload
-{
-    userId: string;
-    firstName: string;
-    lastName: string;
-    friend_id: string;
-}
 
 function SignUp()
 {
@@ -22,13 +13,18 @@ function SignUp()
     const [lastName,setLastName] = React.useState('');
     const [friendID, setFriendID] = React.useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function doSignUp(e:any) : Promise<void>
     {
         e.preventDefault();
+        setMessage('');
+        setIsSubmitting(true);
 
-        var obj = {Login:login,Password:password,FirstName:firstName,LastName:lastName,friend_id:friendID};
-        var js = JSON.stringify(obj);
+        const trimmedLogin = login.trim();
+
+        const payload = {Login:trimmedLogin,Password:password,FirstName:firstName,LastName:lastName,friend_id:friendID};
+        const body = JSON.stringify(payload);
 
         try
         {
@@ -37,7 +33,7 @@ function SignUp()
             const response = await fetch(buildPath('api/signup'),
             {
                 method: 'POST', 
-                body: js, 
+                body: body, 
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -71,50 +67,51 @@ function SignUp()
                 setMessage( res.error );
                 return;
             }
-            
-            // Check if we have an access token
-            if (!res.accessToken) 
+
+            if( res.pendingVerification )
             {
-                console.error('No access token in response:', res);
-                setMessage('Signup successful but no token received');
+                const notification = res.message ?? 'Verification code sent. Please check your email.';
+                setMessage(notification);
+                setTimeout(() =>
+                {
+                    window.location.href = `/verify-email?email=${encodeURIComponent(trimmedLogin)}`;
+                    setMessage('');
+                }, 1500);
                 return;
             }
 
-            const { accessToken } = res;
-            storeToken( res );
-            
-            try
+            if( res.accessToken )
             {
-                const decoded = jwtDecode<JwtPayload>(accessToken);
-                console.log('Decoded token:', decoded);
+                storeToken( res );
 
-                const userId = decoded.userId;
-                const userfirstName = decoded.firstName;
-                const userlastName = decoded.lastName;
-                const userFriendID = decoded.friend_id;
-
-                const user =
+                if( res.id )
                 {
-                    firstName:userfirstName,
-                    lastName:userlastName,
-                    id:userId,
-                    friend_id:userFriendID
-                    
+                    const user =
+                    {
+                        firstName: res.firstName ?? firstName,
+                        lastName: res.lastName ?? lastName,
+                        id: res.id,
+                        friend_id: res.friend_id
+                    };
+                    localStorage.setItem('user_data', JSON.stringify(user));
                 }
-                localStorage.setItem('user_data', JSON.stringify(user));
-                
+
                 setMessage('Account created successfully!');
-                setTimeout(() => {
+                setTimeout(() =>
+                {
                     window.location.href = '/calendar';
                     setMessage('');
                 }, 1000);
-            }
-            catch(tokenError) 
-            {
-                console.error('Token decode error:', tokenError);
-                setMessage('Account created but login failed. Please try logging in.');
                 return;
             }
+
+            if( res.success )
+            {
+                setMessage(res.message ?? 'Signup successful. Please verify your email address.');
+                return;
+            }
+
+            setMessage(res.message ?? 'Signup successful. Please verify your email address.');
         }
         catch(error:any)
         {
@@ -129,7 +126,10 @@ function SignUp()
             {
                 setMessage('Network error. Please try again.');
             }
-            return;
+        }
+        finally
+        {
+            setIsSubmitting(false);
         }
     };
 
@@ -271,8 +271,9 @@ function SignUp()
                     <button 
                         type="submit" 
                         className="btn btn-primary"
+                        disabled={isSubmitting}
                     >
-                        Create Account
+                        {isSubmitting ? 'Sending Code...' : 'Create Account'}
                     </button>
 
                     <button 

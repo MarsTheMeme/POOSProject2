@@ -172,6 +172,25 @@
     border-color: #0090D9;
 }
 
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-link {
+    background: transparent;
+    color: #0B1F3F;
+    border: none;
+    margin-bottom: 0;
+    text-decoration: underline;
+}
+
+.btn-link:hover {
+    color: #0090D9;
+}
+
 /* Forgot password link */
 .forgot-password {
     display: block;

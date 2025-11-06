@@ -2,6 +2,72 @@ require('express');
 require('mongodb');
 const ObjectId = require('mongodb').ObjectId;
 const token = require('./createJWT.js');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+const VERIFICATION_CODE_TTL_MINUTES = parseInt(process.env.EMAIL_VERIFICATION_TTL_MINUTES ?? '15', 10);
+const emailConfigured = Boolean(
+    process.env.EMAIL_HOST &&
+    process.env.EMAIL_PORT &&
+    process.env.EMAIL_USER &&
+    process.env.EMAIL_PASS &&
+    process.env.EMAIL_FROM
+);
+
+let emailTransporter = null;
+
+if (emailConfigured)
+{
+    emailTransporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: Number(process.env.EMAIL_PORT),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth:
+        {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+}
+else
+{
+    console.warn('Email environment variables are incomplete. Verification codes will be logged to the server console.');
+}
+
+async function sendVerificationEmail(recipient, code)
+{
+    if( !emailConfigured || !emailTransporter )
+    {
+        console.log(`[EmailVerification] Verification code for ${recipient}: ${code}`);
+        return;
+    }
+
+    const mailOptions =
+    {
+        from: process.env.EMAIL_FROM,
+        to: recipient,
+        subject: 'Verify your email address',
+        text: `Your verification code is: ${code}\n\nThis code expires in ${VERIFICATION_CODE_TTL_MINUTES} minutes.`,
+        html: `<p>Your verification code is:</p><h2>${code}</h2><p>This code expires in ${VERIFICATION_CODE_TTL_MINUTES} minutes.</p>`
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+}
+
+function generateVerificationCode()
+{
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function hashVerificationCode(code)
+{
+    return crypto.createHash('sha256').update(code).digest('hex');
+}
+
+function getVerificationExpiryDate()
+{
+    return new Date(Date.now() + VERIFICATION_CODE_TTL_MINUTES * 60 * 1000);
+}
 
 exports.setApp = function( app, client )
 {
@@ -22,25 +88,31 @@ exports.setApp = function( app, client )
         var fn = '';
         var ln = '';
         var fid = '';
+        var ret;
 
         if( results.length > 0 )
         {
-            id = results[0]._id.toString(); // id from mongoDB
-            fn = results[0].FirstName;
-            ln = results[0].LastName;
-            fid = results[0].friend_id;
-
-            var ret;
-            
-            try
+            if( results[0].emailVerified === false )
             {
-                const token = require('./createJWT.js');
-                retToken = token.createToken( fn, ln, id );
-                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: fn, lastName: ln, friend_id: fid };
+                ret = { error:'Please verify your email before logging in.' };
             }
-            catch(e)
+            else
             {
-                ret = { error:e.message };
+                id = results[0]._id.toString(); // id from mongoDB
+                fn = results[0].FirstName;
+                ln = results[0].LastName;
+                fid = results[0].friend_id;
+
+                try
+                {
+                    const token = require('./createJWT.js');
+                    const retToken = token.createToken( fn, ln, id );
+                    ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: fn, lastName: ln, friend_id: fid };
+                }
+                catch(e)
+                {
+                    ret = { error:e.message };
+                }
             }
         }
         else
@@ -74,7 +146,40 @@ exports.setApp = function( app, client )
         db.collection('USERS').find({Login:login}).toArray();
         if( results.length > 0 )
         {
-            var ret = { error:'Email already exists' };
+            const existingUser = results[0];
+            if( existingUser.emailVerified === false )
+            {
+                const verificationCode = generateVerificationCode();
+                const verificationCodeHash = hashVerificationCode(verificationCode);
+                const verificationCodeExpires = getVerificationExpiryDate();
+
+                try
+                {
+                    await db.collection('USERS').updateOne(
+                    { _id: existingUser._id },
+                    { $set:
+                        {
+                            verificationCodeHash: verificationCodeHash,
+                            verificationCodeExpires: verificationCodeExpires,
+                            emailVerified: false
+                        }
+                    });
+
+                    await sendVerificationEmail(login, verificationCode);
+
+                    var ret = { success: true, pendingVerification: true, message: 'Verification code resent to your email address.', login: login };
+                }
+                catch(e)
+                {
+                    console.error('Resend verification error:', e);
+                    var ret = { error:'Unable to resend verification code. Please try again later.' };
+                }
+            }
+            else
+            {
+                var ret = { error:'Email already exists' };
+            }
+
             res.status(200).json(ret);
             return;
         }
@@ -90,21 +195,33 @@ exports.setApp = function( app, client )
         }
 
         // Add new user
-        const newUser = {Login:login,Password:password,FirstName:firstName,LastName:lastName, friend_id:friend_id};
+        const verificationCode = generateVerificationCode();
+        const verificationCodeHash = hashVerificationCode(verificationCode);
+        const verificationCodeExpires = getVerificationExpiryDate();
+
+        const newUser = {
+            Login:login,
+            Password:password,
+            FirstName:firstName,
+            LastName:lastName,
+            friend_id:friend_id,
+            emailVerified:false,
+            verificationCodeHash:verificationCodeHash,
+            verificationCodeExpires:verificationCodeExpires
+        };
 
         try
         {
             const result = await db.collection('USERS').insertOne(newUser);
-            var id = result.insertedId.toString();
             try
             {
-                const token = require('./createJWT.js');
-                retToken = token.createToken( firstName, lastName, id );
-                ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: firstName, lastName: lastName, friend_id: friend_id, error: '' };
+                await sendVerificationEmail(login, verificationCode);
+                ret = { success: true, pendingVerification: true, message: 'Verification code sent to your email address.', login: login };
             }
             catch(e)
             {
-                ret = { error:e.message };
+                console.error('Verification email send error:', e);
+                ret = { error:'Account created but failed to send verification email. Please try resending the code or contact support.' };
             }
         }
         catch(e)
@@ -114,6 +231,160 @@ exports.setApp = function( app, client )
         }
 
         res.status(200).json(ret);
+    });
+
+    app.post('/api/verify-email', async (req, res, next) =>
+    {
+        const { login, code } = req.body;
+
+        if( !login || !code || login.trim().length === 0 || code.trim().length === 0 )
+        {
+            res.status(200).json({ error:'Email and verification code are required.' });
+            return;
+        }
+
+        const db = client.db('sample_mflix');
+        const user = await db.collection('USERS').findOne({Login:login});
+
+        if( !user )
+        {
+            res.status(200).json({ error:'Account not found. Please sign up first.' });
+            return;
+        }
+
+        const userId = user._id.toString();
+
+        if( user.emailVerified && user.emailVerified !== false )
+        {
+            try
+            {
+                const retToken = token.createToken( user.FirstName, user.LastName, userId );
+                res.status(200).json({
+                    success:true,
+                    alreadyVerified:true,
+                    message:'Email already verified. You can log in.',
+                    accessToken:retToken.accessToken,
+                    id:userId,
+                    Login:user.Login,
+                    firstName:user.FirstName,
+                    lastName:user.LastName,
+                    friend_id:user.friend_id,
+                    emailVerified:true
+                });
+            }
+            catch(e)
+            {
+                res.status(200).json({ error:e.message });
+            }
+            return;
+        }
+
+        if( !user.verificationCodeHash || !user.verificationCodeExpires )
+        {
+            res.status(200).json({ error:'No verification code found. Please request a new code.' });
+            return;
+        }
+
+        const hashedInput = hashVerificationCode(code.trim());
+        const expiration = new Date(user.verificationCodeExpires);
+
+        if( hashedInput !== user.verificationCodeHash )
+        {
+            res.status(200).json({ error:'Invalid verification code.' });
+            return;
+        }
+
+        if( expiration.getTime() < Date.now() )
+        {
+            res.status(200).json({ error:'Verification code has expired. Please request a new code.' });
+            return;
+        }
+
+        await db.collection('USERS').updateOne(
+        { _id: user._id },
+        {
+            $set:
+            {
+                emailVerified:true
+            },
+            $unset:
+            {
+                verificationCodeHash:'',
+                verificationCodeExpires:''
+            }
+        });
+
+        try
+        {
+            const retToken = token.createToken( user.FirstName, user.LastName, userId );
+            res.status(200).json({
+                success:true,
+                message:'Email verified successfully.',
+                accessToken:retToken.accessToken,
+                id:userId,
+                Login:user.Login,
+                firstName:user.FirstName,
+                lastName:user.LastName,
+                friend_id:user.friend_id,
+                emailVerified:true
+            });
+        }
+        catch(e)
+        {
+            res.status(200).json({ error:e.message });
+        }
+    });
+
+    app.post('/api/resend-verification', async (req, res, next) =>
+    {
+        const { login } = req.body;
+
+        if( !login || login.trim().length === 0 )
+        {
+            res.status(200).json({ error:'Email is required to resend verification code.' });
+            return;
+        }
+
+        const db = client.db('sample_mflix');
+        const user = await db.collection('USERS').findOne({Login:login});
+
+        if( !user )
+        {
+            res.status(200).json({ error:'Account not found. Please sign up first.' });
+            return;
+        }
+
+        if( user.emailVerified && user.emailVerified !== false )
+        {
+            res.status(200).json({ error:'Email already verified. You can log in now.' });
+            return;
+        }
+
+        const verificationCode = generateVerificationCode();
+        const verificationCodeHash = hashVerificationCode(verificationCode);
+        const verificationCodeExpires = getVerificationExpiryDate();
+
+        try
+        {
+            await db.collection('USERS').updateOne(
+            { _id: user._id },
+            { $set:
+                {
+                    verificationCodeHash:verificationCodeHash,
+                    verificationCodeExpires:verificationCodeExpires,
+                    emailVerified:false
+                }
+            });
+
+            await sendVerificationEmail(login, verificationCode);
+
+            res.status(200).json({ success:true, pendingVerification:true, message:'Verification code resent.', login:login });
+        }
+        catch(e)
+        {
+            console.error('Resend verification error:', e);
+            res.status(200).json({ error:'Unable to resend verification code. Please try again later.' });
+        }
     });
     
     app.post('/api/addevent', async (req, res, next) =>
