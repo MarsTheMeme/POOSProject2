@@ -11,7 +11,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     let _ud : any = localStorage.getItem('user_data');
     let ud = JSON.parse( _ud );
     let userId : string = ud.id; // id from local Login/Signup tsx
-    let userFriendID : string = ud.friend_id;
+    //let userFriendID : string = ud.friend_id;
     // let _id : string;
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
