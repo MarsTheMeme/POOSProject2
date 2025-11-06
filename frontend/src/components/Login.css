@@ -23,13 +23,17 @@
 
 /* App Logo */
 .app-logo {
-    font-size: 48px;
-    font-weight: 700;
-    color: #000;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin-bottom: 60px;
-    letter-spacing: 2px;
-    font-family: 'Courier New', monospace;
+}
+
+.app-logo img {
+    max-width: 180px;
+    width: 100%;
+    height: auto;
+    display: block;
 }
 
 /* Welcome title */
@@ -251,8 +255,11 @@
     }
 
     .app-logo {
-        font-size: 40px;
         margin-bottom: 40px;
+    }
+
+    .app-logo img {
+        max-width: 150px;
     }
 
     .welcome-title {

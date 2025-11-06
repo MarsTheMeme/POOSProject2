@@ -25,7 +25,6 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     const [notes,setNotes] = React.useState('');
     const [time,setTime] = React.useState('');
     const [eventList, setEventList] = useState<any[]>([]); // stores events in a list
-    const [dueDate, setDueDate] = React.useState('');
     const [allEvents, setAllEvents] = useState<any[]>([]);
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     const [isSearchExpanded, setIsSearchExpanded] = useState(true);
@@ -127,7 +126,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     {
         e.preventDefault();
         const friendIds = selectedFriends.join(',');
-        var obj = {date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,dueDate:dueDate,jwtToken:retrieveToken()};
+        var obj = {date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -243,7 +242,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         await loadAllEvents();
     };
 
-    function populateEvent(_id:string, date:string, time:string, name:string, event_type:string, notes:string, friend_id:string, due_date?:string) : void
+    function populateEvent(_id:string, date:string, time:string, name:string, event_type:string, notes:string, friend_id:string) : void
     {
         setEventId( _id );
         setDate( date );
@@ -252,7 +251,6 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         setSelectedFriends( friend_id ? friend_id.split(',') : [] );
         setNotes (notes );
         setTime( time );
-        setDueDate(due_date || '');
     }
 
     function clearEdit() : void
@@ -264,7 +262,6 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         setType('');
         setSelectedFriends([]);
         setNotes('');
-        setDueDate('');
     }
 
     async function editEvent(e:any) : Promise<void>
@@ -278,7 +275,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         }
 
         const friendIds = selectedFriends.join(',');
-        var obj = {_id:eventId,date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,dueDate:dueDate,jwtToken:retrieveToken()};
+        var obj = {_id:eventId,date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -356,10 +353,6 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     {
         setTime( e.target.value );
     }
-    function handleSetDueDate( e: any ) : void
-    {
-        setDueDate( e.target.value );
-    }
 
     return(
         <div className="calendar-ui">
@@ -394,17 +387,15 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                 <div key={index} className="search-result-card">
                                     <p><strong>Date:</strong> {event.date}</p>
                                     <p><strong>Time:</strong> {event.time}</p>
-                                    {event.dueDate && <p><strong>Due:</strong> {event.dueDate}</p>}
                                     <p><strong>Name:</strong> {event.name}</p>
                                     <p><strong>Type:</strong> {event.event_type}</p>
                                     <p><strong>Notes:</strong> {event.notes}</p>
-                                        {event.friend_id && <p><strong>Friend:</strong> {getFriendNames(event.friend_id)}</p>}
-                                        {event.dueDate && <p><strong>Due:</strong> {event.dueDate}</p>}
+                                    {event.friend_id && <p><strong>Friend:</strong> {getFriendNames(event.friend_id)}</p>}
                                     <div className="result-actions">
                                         <button type="button" id="deleteEventButton" className="buttons"
                                         onClick={() => deleteEvent(event._id,event.userId)}>Delete Event</button>
                                         <button type="button" id="populateEditEvent" className="buttons"
-                                        onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friend_id,event.dueDate)}>Edit Event</button>
+                                        onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friend_id)}>Edit Event</button>
                                     </div>
                                 </div>
                             ))}
@@ -444,8 +435,6 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                             </option>
                         ))}
                     </select>
-                    <input type="text" id="cardText" placeholder="Due Date (optional)" value={dueDate}
-                    onChange={handleSetDueDate} />
                     <input type="text" id="cardText" placeholder="Notes" value={notes}
                     onChange={handleSetNotes} />
                     <div className="form-actions">
@@ -472,7 +461,6 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                     <div className="event-item-meta">
                                         <span><strong>Date:</strong> {event.date || '—'}</span>
                                         <span><strong>Time:</strong> {event.time || '—'}</span>
-                                        {event.dueDate && <span><strong>Due:</strong> {event.dueDate}</span>}
                                     </div>
                                     {event.notes && <p className="event-item-notes">{event.notes}</p>}
                                     {event.friend_id && (
@@ -489,8 +477,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                                 event.name,
                                                 event.event_type,
                                                 event.notes,
-                                                event.friend_id,
-                                                event.dueDate
+                                                event.friend_id
                                             )}
                                         >
                                             Edit Event

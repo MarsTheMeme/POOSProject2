@@ -345,7 +345,9 @@
     margin-bottom: 12px;
 }
 
-.events-card {
+
+.events-card,
+.friends-card {
     background: linear-gradient(180deg, #f8faff 0%, #eef3ff 100%);
     grid-column: 1 / -1;
     width: 100%;
@@ -353,13 +355,15 @@
     margin: 0 auto;
 }
 
-.events-list {
+.events-list,
+.friends-list {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-.event-item {
+.event-item,
+.friend-item {
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(210, 224, 255, 0.8);
     border-radius: 20px;
@@ -367,7 +371,8 @@
     box-shadow: 0 18px 28px rgba(15, 40, 85, 0.12);
 }
 
-.event-item-header {
+.event-item-header,
+.friend-item-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -375,7 +380,8 @@
     margin-bottom: 10px;
 }
 
-.event-item-name {
+.event-item-name,
+.friend-item-name {
     font-size: 1.05rem;
     font-weight: 600;
     color: #0b1f3f;
@@ -392,7 +398,8 @@
     text-transform: uppercase;
 }
 
-.event-item-meta {
+.event-item-meta,
+.friend-item-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
@@ -401,7 +408,8 @@
     margin-bottom: 10px;
 }
 
-.event-item-meta strong {
+.event-item-meta strong,
+.friend-item-meta strong {
     color: #0b1f3f;
 }
 
@@ -416,25 +424,36 @@
     color: #0b1f3f;
 }
 
-.event-item-actions {
+.friend-item-id {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #26406c;
+    letter-spacing: 0.02em;
+}
+
+.event-item-actions,
+.friend-item-actions {
     display: flex;
     justify-content: flex-start;
     gap: 12px;
     margin-top: 12px;
 }
 
-.event-item-actions .buttons {
+.event-item-actions .buttons,
+.friend-item-actions .buttons {
     padding: 0.5em 1.4em;
 }
 
-.event-item-actions .buttons.danger {
+.event-item-actions .buttons.danger,
+.friend-item-actions .buttons.danger {
     background: linear-gradient(135deg, #951a2c 0%, #6b0f19 100%);
 }
 
-.event-item-actions .buttons.danger:hover {
+.event-item-actions .buttons.danger:hover,
+.friend-item-actions .buttons.danger:hover {
     background: linear-gradient(135deg, #ad2537 0%, #7d1622 100%);
 }
-}
+
 
 .empty-state {
     margin-top: 6px;

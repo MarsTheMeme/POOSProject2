@@ -3,6 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 import { storeToken, } from '../tokenStorage.ts';
 import { buildPath } from './Path.ts';
 import './Login.css';
+import logo from '../assets/p3-logo.svg';
 
 interface JwtPayload 
 {
@@ -154,7 +155,9 @@ function Login()
     return(
         <div className="login-container">
             <div className="login-card">
-                <div className="app-logo">P3</div>
+                <div className="app-logo">
+                    <img src={logo} alt="P3 logo" />
+                </div>
                 
                 <h1 className="welcome-title">Welcome</h1>
                 

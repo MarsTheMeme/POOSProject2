@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { buildPath } from './Path.ts';
 import { retrieveToken, storeToken } from '../tokenStorage.ts';
 
-function FriendUI()
+type FriendUIProps = {
+    className?: string;
+};
+
+function FriendUI({ className = '' }: FriendUIProps)
 {
     let _ud : any = localStorage.getItem('user_data');
     let ud = JSON.parse( _ud );
@@ -18,6 +22,11 @@ function FriendUI()
     const [firstName,setFirstName] = React.useState('');
     const [lastName,setLastName] = React.useState('');
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
+    const [allFriends, setAllFriends] = useState<any[]>([]);
+
+    useEffect(() => {
+        loadAllFriends();
+    }, []);
     
     function handleTokenExpiration(error: string) : void
     {
@@ -61,6 +70,7 @@ function FriendUI()
             {
                 setMessage('Friend has been added');
                 storeToken( res.jwtToken );
+                await loadAllFriends();
             }
         }
         catch(error:any)
@@ -106,6 +116,7 @@ function FriendUI()
                 setResults('No friends found');
             }
             storeToken( res.jwtToken );
+            await loadAllFriends();
         }
         catch(error:any)
         {
@@ -144,7 +155,9 @@ function FriendUI()
             alert(error.toString());
             setResults(error.toString());
         }
-        setFriendList(friendList.filter(e => e._id !== _id));
+        setFriendList(prev => prev.filter(e => e._id !== _id));
+        setAllFriends(prev => prev.filter(friend => friend._id !== _id));
+        await loadAllFriends();
     };
 
     function populateFriend(_id:string, friend_id:string, firstName:string, lastName:string) : void
@@ -204,6 +217,7 @@ function FriendUI()
                 
                 // recall searchFriend (need fake friend for preventDefault to not cause errors)
                 await searchFriend({preventDefault: () => {}});
+                await loadAllFriends();
 
             }
         }
@@ -230,14 +244,51 @@ function FriendUI()
         setLastName( e.target.value );
     }
 
+    async function loadAllFriends() : Promise<void>
+    {
+        const obj = {userId:userId,search:'',jwtToken:retrieveToken()};
+        const js = JSON.stringify(obj);
+
+        try
+        {
+            const response = await fetch(buildPath('api/searchfriend'),
+            {method:'POST',body:js,headers:{'Content-Type':
+            'application/json'}});
+
+            let txt = await response.text();
+            let res = JSON.parse(txt);
+
+            if( res.error &&res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return;
+            }
+
+            const results = Array.isArray(res.results) ? res.results : [];
+            setAllFriends(results);
+            if(res.jwtToken)
+            {
+                storeToken(res.jwtToken);
+            }
+        }
+        catch(error:any)
+        {
+            console.log(error.toString());
+        }
+    }
+
     return(
-        <div id="FriendUIDiv">
-            <br />
-            Search: <input type="text" id="searchText" placeholder="Friend To Search For"
-            onChange={handleSearchTextChange} />
-            <button type="button" id="searchCardButton" className="buttons"
-            onClick={searchFriend}> Search Friend</button><br />
-            <span id="cardSearchResult">{searchResults}</span><br />
+        <>
+        <div id="FriendUIDiv" className={`card-section ${className}`.trim()}>
+            <div className="section-heading">Friends</div>
+            <div className="subheading">Search</div>
+            <div className="search-row">
+                <input type="text" id="friendSearchInput" placeholder="Friend To Search For"
+                onChange={handleSearchTextChange} />
+                <button type="button" id="searchCardButton" className="buttons"
+                onClick={searchFriend}>Search Friend</button>
+            </div>
+            <span id="cardSearchResult">{searchResults}</span>
             {friendList.length > 0 && (
                 <div id="searchResultsList">
                     {friendList.map((friend, index) => (
@@ -253,19 +304,55 @@ function FriendUI()
                     ))}
                 </div>
             )}
-            Add/Edit: <br />
+            <div className="subheading">Add / Edit Friend</div>
             <input type="text" id="cardText" placeholder="FriendID" value={friendId}
-            onChange={handleSetFriendId} /><br />
+            onChange={handleSetFriendId} />
             <input type="text" id="cardText" placeholder="First Name" value={firstName}
-            onChange={handleSetFirstName} /><br />
+            onChange={handleSetFirstName} />
             <input type="text" id="cardText" placeholder="Last Name" value={lastName}
-            onChange={handleSetLastName} /><br />
-            <button type="button" id="addFriendButton" className="buttons"
-            onClick={addFriend}> Add Friend </button><br />
-            <button type="button" id="editFriendButton" className="buttons"
-            onClick={editFriend}> Edit Friend </button><br />
+            onChange={handleSetLastName} />
+            <div className="form-actions">
+                <button type="button" id="addFriendButton" className="buttons"
+                onClick={addFriend}>Add Friend</button>
+                <button type="button" id="editFriendButton" className="buttons"
+                onClick={editFriend}>Edit Friend</button>
+            </div>
             <span id="cardAddResult">{message}</span>
         </div>
+        <section className="card-section friends-card">
+            <div className="section-heading">Friends List</div>
+            {allFriends.length === 0 ? (
+                <p className="empty-state">No friends yet. Add one using the card above.</p>
+            ) : (
+                <div className="friends-list">
+                    {allFriends.map((friend, index) => (
+                        <div key={friend._id ?? index} className="friend-item">
+                            <div className="friend-item-header">
+                                <span className="friend-item-name">{friend.firstName} {friend.lastName}</span>
+                                <span className="friend-item-id">ID: {friend.friend_id}</span>
+                            </div>
+                            <div className="friend-item-actions">
+                                <button
+                                    type="button"
+                                    className="buttons"
+                                    onClick={() => populateFriend(friend._id, friend.friend_id, friend.firstName, friend.lastName)}
+                                >
+                                    Edit Friend
+                                </button>
+                                <button
+                                    type="button"
+                                    className="buttons danger"
+                                    onClick={() => deleteFriend(friend._id, friend.userId)}
+                                >
+                                    Delete Friend
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </section>
+        </>
     );
 }
 export default FriendUI;
