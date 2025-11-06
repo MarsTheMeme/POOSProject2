@@ -252,6 +252,28 @@
     }
 }
 
+/* Loading spinner animation for buttons */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Apply spinning animation to loading elements */
+svg[stroke-dasharray] {
+    animation: spin 1s linear infinite;
+}
+
+/* Success message styling */
+.success-message {
+    color: #059669;
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+    padding: 8px;
+    background: #D1FAE5;
+    border-radius: 8px;
+}
+
 /* Focus visible for accessibility */
 .btn:focus-visible,
 .login-input:focus-visible {

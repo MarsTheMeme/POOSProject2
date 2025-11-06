@@ -226,7 +226,14 @@ function Login()
                         Sign Up
                     </button>
 
-                    <a href="#" className="forgot-password">
+                    <a 
+                        href="#" 
+                        className="forgot-password"
+                        onClick={(e) => { 
+                            e.preventDefault(); 
+                            window.location.href = '/forgot-password'; 
+                        }}
+                    >
                         Forgot Password?
                     </a>
 
