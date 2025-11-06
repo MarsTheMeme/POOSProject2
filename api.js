@@ -121,7 +121,7 @@ exports.setApp = function( app, client )
         // incoming: date, event_type, friend_id, name, notes, userId, time
         // outgoing: error
 
-        const { date, type, friend, name, notes, userId, time, jwtToken } = req.body;
+        const { date, type, friends, name, notes, userId, time, jwtToken } = req.body;
 
         try
         {
@@ -137,7 +137,16 @@ exports.setApp = function( app, client )
             console.log(e.message);
         }
 
-        const newEvent = {date:date,event_type:type,friend_id:friend,name:name,notes:notes,userId:userId,time:time};
+        const newEvent = 
+        {
+            date:date,
+            event_type:type,
+            friends: friends,
+            name:name,
+            notes:notes,
+            userId:userId,
+            time:time
+        };
         var error = '';
 
         try
@@ -193,6 +202,58 @@ exports.setApp = function( app, client )
         const db = client.db('sample_mflix');
         const results = await db.collection('CALENDAR_EVENT').find({
             userId: userId, 
+            $or: [
+                    {date: {$regex:_search+'.*', $options:'i'}},
+                    {time: {$regex:_search+'.*', $options:'i'}},
+                    {name: {$regex:_search+'.*', $options:'i'}},
+                    {event_type: {$regex:_search+'.*', $options:'i'}},
+                    {notes: {$regex:_search+'.*', $options:'i'}},
+            ] }).toArray();
+        
+        var _ret = results;
+        
+        var refreshedToken = null;
+        try
+        {
+            refreshedToken = token.refresh(jwtToken);;
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var ret = {results:_ret, error:error, jwtToken:refreshedToken};
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/friendidsearchevents', async (req, res, next) =>
+    {
+        // incoming: friend_id, search
+        // outgoing: results[], error
+
+        var error = '';
+
+        const { friend_id, search, jwtToken } = req.body;
+
+        try
+        {
+            if( token.isExpired( jwtToken ))
+            {
+                var r = {error:'The JWT is no longer valid',jwtToken: ''};
+                res.status(200).json(r);
+                return;
+            }
+        }
+        catch(e)
+        {
+            console.log(e.message);
+        }
+
+        var _search = search.trim();
+        
+        const db = client.db('sample_mflix');
+        const results = await db.collection('CALENDAR_EVENT').find({
+            "friends.friend_id": friend_id, 
             $or: [
                     {date: {$regex:_search+'.*', $options:'i'}},
                     {time: {$regex:_search+'.*', $options:'i'}},
@@ -275,10 +336,10 @@ exports.setApp = function( app, client )
 
     app.post('/api/editevent', async (req, res, next) =>
     {
-        // incoming: userId, _id date, time, name, event_type, friend_id, notes
+        // incoming: userId, _id date, time, name, event_type, friends, notes
         // outgoing: error
 
-        const { _id, date, type, friend, name, notes, userId, time, jwtToken } = req.body;
+        const { _id, date, type, friends, name, notes, userId, time, jwtToken } = req.body;
 
         try
         {
@@ -309,7 +370,7 @@ exports.setApp = function( app, client )
                 {
                     date: date,
                     event_type: type,
-                    friend_id: friend,
+                    friends: friends,
                     name: name,
                     notes: notes,
                     time: time

@@ -13,7 +13,7 @@ _createToken = function ( fn, ln, id )
         const expiration = new Date();
         const user = {userId:id,firstName:fn,lastName:ln};
         const accessToken= jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: '30m'} );
+        { expiresIn: '4h'} );
         // In order to exoire with a value other than the default, use the
         // following
         /*
