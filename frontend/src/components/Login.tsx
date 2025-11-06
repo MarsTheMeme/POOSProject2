@@ -64,6 +64,18 @@ function Login()
             }
             
             if (res.error && res.error.length > 0) {
+                // Check if verified
+                if (res.error.includes('Please verify your email before logging in.'))
+                {
+                    setMessage(res.error);
+                    setTimeout(() =>
+                    {
+                        window.location.href = `/verify-email?email=${encodeURIComponent(loginName)}`;
+                        setMessage('');
+                    }, 1500);
+                    return;
+                }
+                
                 setMessage(res.error);
                 return;
             }
@@ -71,7 +83,7 @@ function Login()
             // Check if we have an access token
             if (!res.accessToken) {
                 console.error('No access token in response:', res);
-                setMessage('Signup successful but no token received');
+                setMessage(res.error || 'Login Sucessfull, But No Token Recieved');
                 return;
             }
             
