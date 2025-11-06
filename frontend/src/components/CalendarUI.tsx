@@ -11,6 +11,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     let _ud : any = localStorage.getItem('user_data');
     let ud = JSON.parse( _ud );
     let userId : string = ud.id; // id from local Login/Signup tsx
+    let userFriendID : string = ud.friend_id;
     // let _id : string;
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
@@ -111,22 +112,39 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         }
     }
 
-    function getFriendNames(friendIds: string): string
+    function getFriendNames(friends: any): string
     {
-        if (!friendIds) return 'No Friends';
-        const ids = friendIds.split(',');
-        const names = ids.map(id => {
-            const friend = friendList.find(f => f.friend_id === id);
-            return friend ? `${friend.firstName} ${friend.lastName}` : id;
-        });
-        return names.join(', ');
+        if (!friends || friends.length === 0) return 'No Friends';
+
+        if (typeof friends === 'string') 
+        {
+            const ids = friends.split(',');
+            const names = ids.map(id => {
+                const friend = friendList.find(f => f.friend_id === id);
+                return friend ? `${friend.firstName} ${friend.lastName}` : id;
+            });
+            return names.join(', ');
+        }
+        
+        if (Array.isArray(friends))
+        {
+            return friends.map(f => f.fullName).join(', ');
+        }
+
+        return 'No Friends';
     }
 
     async function addEvent(e:any) : Promise<void>
     {
         e.preventDefault();
-        const friendIds = selectedFriends.join(',');
-        var obj = {date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        const friendsArray = selectedFriends.map(friendId => {
+            const friend = friendList.find(f => f.friend_id === friendId);
+            return {
+                friend_id: friendId,
+                fullName: friend ? `${friend.FirstName} ${friend.LastName}` : friendId
+            };
+        });
+        var obj = {date:date,type:type,friends:friendsArray,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -242,15 +260,27 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         await loadAllEvents();
     };
 
-    function populateEvent(_id:string, date:string, time:string, name:string, event_type:string, notes:string, friend_id:string) : void
+    function populateEvent(_id:string, date:string, time:string, name:string, event_type:string, notes:string, friends:any) : void
     {
         setEventId( _id );
         setDate( date );
         setType( event_type );
         setName( name );
-        setSelectedFriends( friend_id ? friend_id.split(',') : [] );
         setNotes (notes );
         setTime( time );
+
+        if (Array.isArray(friends))
+        {
+            setSelectedFriends(friends.map(f => f.friend_id));
+        }
+        else if (typeof friends === 'string')
+        {
+            setSelectedFriends(friends ? friends.split(',') : []);
+        }
+        else
+        {
+            setSelectedFriends([]);
+        }
     }
 
     function clearEdit() : void
@@ -274,8 +304,14 @@ function CalendarUI({ friendCard }: CalendarUIProps)
             return;
         }
 
-        const friendIds = selectedFriends.join(',');
-        var obj = {_id:eventId,date:date,type:type,friend:friendIds,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        const friendsArray = selectedFriends.map(friendId => {
+            const friend = friendList.find(f => f.friend_id === friendId);
+            return{
+                friend_id: friendId,
+                fullName: friend ? `${friend.FirstName} ${friend.LastName}` : friendId
+            };
+        });
+        var obj = {_id:eventId,date:date,type:type,friends:friendsArray,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -390,12 +426,13 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                     <p><strong>Name:</strong> {event.name}</p>
                                     <p><strong>Type:</strong> {event.event_type}</p>
                                     <p><strong>Notes:</strong> {event.notes}</p>
-                                    {event.friend_id && <p><strong>Friend:</strong> {getFriendNames(event.friend_id)}</p>}
+                                        {((event.friends && event.friends.length > 0) || event.friend_id) && 
+                                            <p><strong>Friend:</strong> {getFriendNames(event.friends || event.friend_id)}</p>}
                                     <div className="result-actions">
                                         <button type="button" id="deleteEventButton" className="buttons"
                                         onClick={() => deleteEvent(event._id,event.userId)}>Delete Event</button>
                                         <button type="button" id="populateEditEvent" className="buttons"
-                                        onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friend_id)}>Edit Event</button>
+                                        onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friends || event.friend_id)}>Edit Event</button>
                                     </div>
                                 </div>
                             ))}
@@ -463,8 +500,8 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                         <span><strong>Time:</strong> {event.time || '—'}</span>
                                     </div>
                                     {event.notes && <p className="event-item-notes">{event.notes}</p>}
-                                    {event.friend_id && (
-                                        <p className="event-item-friends"><strong>Friends:</strong> {getFriendNames(event.friend_id)}</p>
+                                    {((event.friends && event.friends.length > 0) || event.friend_id) && (
+                                        <p className="event-item-friends"><strong>Friends:</strong> {getFriendNames(event.friends || event.friend_id)}</p>
                                     )}
                                     <div className="event-item-actions">
                                         <button
@@ -477,7 +514,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                                 event.name,
                                                 event.event_type,
                                                 event.notes,
-                                                event.friend_id
+                                                event.friends || event.friend_id,
                                             )}
                                         >
                                             Edit Event
