@@ -1,31 +1,39 @@
+process.env.NODE_ENV = 'test';
+const request = require('supertest');
+const app = require('../server.js');
 const express = require('express');
 const cors = require('cors');
-const MongoClient = require('mongodb').MongoClient;
+const { MongoClient } = require('mongodb');
 require('dotenv').config();
-const url = process.env.MONGODB_URI;
-
-const client = new MongoClient(url);
-client.connect();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use((req, res, next) =>
-{
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader(
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader(
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept, Authorization'
-    );
-    res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PATCH, DELETE, OPTIONS'
-    );
-    next();
+  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  next();
 });
 
-var api = require('./api.js');
-api.setApp( app, client );
+async function startServer() {
+  const url = process.env.MONGODB_URI;
+  const client = new MongoClient(url);
+  await client.connect();
 
-app.listen(5000); // start Node + Express server on port 5000
+  const api = require('./api.js');
+  api.setApp(app, client);
+
+  app.listen(5000, () => console.log('Server running on port 5000'));
+}
+
+// Only start automatically if not running in test mode
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+module.exports = app;
