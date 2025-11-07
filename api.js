@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 const VERIFICATION_CODE_TTL_MINUTES = parseInt(process.env.EMAIL_VERIFICATION_TTL_MINUTES ?? '15', 10);
+const PASSWORD_RESET_TTL_MINUTES = parseInt(process.env.PASSWORD_RESET_TTL_MINUTES ?? '15', 10);
 const emailConfigured = Boolean(
     process.env.EMAIL_HOST &&
     process.env.EMAIL_PORT &&
@@ -54,6 +55,26 @@ async function sendVerificationEmail(recipient, code)
     await emailTransporter.sendMail(mailOptions);
 }
 
+async function sendPasswordResetEmail(recipient, code)
+{
+    if( !emailConfigured || !emailTransporter )
+    {
+        console.log(`[PasswordReset] Reset code for ${recipient}: ${code}`);
+        return;
+    }
+
+    const mailOptions =
+    {
+        from: process.env.EMAIL_FROM,
+        to: recipient,
+        subject: 'Reset your password',
+        text: `Use this code to reset your password: ${code}\n\nThis code expires in ${PASSWORD_RESET_TTL_MINUTES} minutes.`,
+        html: `<p>Use this code to reset your password:</p><h2>${code}</h2><p>This code expires in ${PASSWORD_RESET_TTL_MINUTES} minutes.</p>`
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+}
+
 function generateVerificationCode()
 {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -67,6 +88,11 @@ function hashVerificationCode(code)
 function getVerificationExpiryDate()
 {
     return new Date(Date.now() + VERIFICATION_CODE_TTL_MINUTES * 60 * 1000);
+}
+
+function getPasswordResetExpiryDate()
+{
+    return new Date(Date.now() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000);
 }
 
 exports.setApp = function( app, client )
@@ -384,6 +410,170 @@ exports.setApp = function( app, client )
         {
             console.error('Resend verification error:', e);
             res.status(200).json({ error:'Unable to resend verification code. Please try again later.' });
+        }
+    });
+
+    app.post('/api/request-password-reset', async (req, res, next) =>
+    {
+        const { login } = req.body;
+
+        if( !login || login.trim().length === 0 )
+        {
+            res.status(200).json({ error:'Email is required to reset your password.' });
+            return;
+        }
+
+        const trimmedLogin = login.trim();
+        const genericSuccess = { success:true, message:'If an account matches that email, a reset code has been sent.' };
+
+        const db = client.db('sample_mflix');
+        const user = await db.collection('USERS').findOne({Login:trimmedLogin});
+
+        if( !user )
+        {
+            res.status(200).json(genericSuccess);
+            return;
+        }
+
+        const resetCode = generateVerificationCode();
+        const passwordResetCodeHash = hashVerificationCode(resetCode);
+        const passwordResetCodeExpires = getPasswordResetExpiryDate();
+
+        try
+        {
+            await db.collection('USERS').updateOne(
+            { _id:user._id },
+            {
+                $set:
+                {
+                    passwordResetCodeHash:passwordResetCodeHash,
+                    passwordResetCodeExpires:passwordResetCodeExpires
+                }
+            });
+
+            await sendPasswordResetEmail(trimmedLogin, resetCode);
+
+            res.status(200).json(genericSuccess);
+        }
+        catch(e)
+        {
+            console.error('Request password reset error:', e);
+            res.status(200).json({ error:'Unable to start password reset. Please try again later.' });
+        }
+    });
+
+    app.post('/api/verify-password-reset-code', async (req, res, next) =>
+    {
+        const { login, code } = req.body;
+
+        if( !login || !code || login.trim().length === 0 || code.trim().length === 0 )
+        {
+            res.status(200).json({ error:'Email and reset code are required.' });
+            return;
+        }
+
+        const trimmedLogin = login.trim();
+        const trimmedCode = code.trim();
+
+        const db = client.db('sample_mflix');
+        const user = await db.collection('USERS').findOne({Login:trimmedLogin});
+
+        if( !user || !user.passwordResetCodeHash || !user.passwordResetCodeExpires )
+        {
+            res.status(200).json({ error:'Invalid or expired reset code.' });
+            return;
+        }
+
+        const hashedInput = hashVerificationCode(trimmedCode);
+        const expiration = new Date(user.passwordResetCodeExpires);
+
+        if( hashedInput !== user.passwordResetCodeHash )
+        {
+            res.status(200).json({ error:'Invalid or expired reset code.' });
+            return;
+        }
+
+        if( expiration.getTime() < Date.now() )
+        {
+            res.status(200).json({ error:'Reset code has expired. Please request a new one.' });
+            return;
+        }
+
+        res.status(200).json({ success:true, message:'Code verified. You can now reset your password.' });
+    });
+
+    app.post('/api/reset-password', async (req, res, next) =>
+    {
+        const { login, code, newPassword } = req.body;
+
+        if( !login || !code || !newPassword )
+        {
+            res.status(200).json({ error:'Email, reset code, and new password are required.' });
+            return;
+        }
+
+        const trimmedLogin = login.trim();
+        const trimmedCode = code.trim();
+        const trimmedPassword = newPassword.trim();
+
+        if( trimmedLogin.length === 0 || trimmedCode.length === 0 || trimmedPassword.length === 0 )
+        {
+            res.status(200).json({ error:'Email, reset code, and new password are required.' });
+            return;
+        }
+
+        if( trimmedPassword.length < 6 )
+        {
+            res.status(200).json({ error:'New password must be at least 6 characters long.' });
+            return;
+        }
+
+        const db = client.db('sample_mflix');
+        const user = await db.collection('USERS').findOne({Login:trimmedLogin});
+
+        if( !user || !user.passwordResetCodeHash || !user.passwordResetCodeExpires )
+        {
+            res.status(200).json({ error:'Invalid or expired reset code.' });
+            return;
+        }
+
+        const hashedInput = hashVerificationCode(trimmedCode);
+        const expiration = new Date(user.passwordResetCodeExpires);
+
+        if( hashedInput !== user.passwordResetCodeHash )
+        {
+            res.status(200).json({ error:'Invalid or expired reset code.' });
+            return;
+        }
+
+        if( expiration.getTime() < Date.now() )
+        {
+            res.status(200).json({ error:'Reset code has expired. Please request a new one.' });
+            return;
+        }
+
+        try
+        {
+            await db.collection('USERS').updateOne(
+            { _id:user._id },
+            {
+                $set:
+                {
+                    Password:trimmedPassword
+                },
+                $unset:
+                {
+                    passwordResetCodeHash:'',
+                    passwordResetCodeExpires:''
+                }
+            });
+
+            res.status(200).json({ success:true, message:'Password updated successfully.' });
+        }
+        catch(e)
+        {
+            console.error('Reset password error:', e);
+            res.status(200).json({ error:'Unable to update password. Please try again later.' });
         }
     });
     

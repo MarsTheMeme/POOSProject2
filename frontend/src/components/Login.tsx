@@ -216,7 +216,7 @@ function Login()
                         Sign Up
                     </button>
 
-                    <a href="#" className="forgot-password">
+                    <a href="/forgot-password" className="forgot-password">
                         Forgot Password?
                     </a>
                 </form>

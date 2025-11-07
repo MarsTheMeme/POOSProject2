@@ -46,6 +46,21 @@
     letter-spacing: 1px;
 }
 
+.login-subtitle {
+    font-size: 16px;
+    color: #6B7280;
+    text-align: center;
+    margin: -24px 0 16px;
+    line-height: 1.4;
+}
+
+.step-indicator {
+    text-align: center;
+    font-size: 14px;
+    color: #9CA3AF;
+    margin-bottom: 24px;
+}
+
 /* Form container */
 .login-form {
     width: 100%;
@@ -125,6 +140,16 @@
     text-align: center;
     padding: 8px;
     background: #FEE2E2;
+    border-radius: 8px;
+}
+
+.success-message {
+    color: #065f46;
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+    padding: 8px;
+    background: #d1fae5;
     border-radius: 8px;
 }
 
