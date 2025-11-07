@@ -154,16 +154,6 @@ function Login()
         setShowPassword(!showPassword);
     }
 
-    const handleCalendarTest = () => {
-        // Navigate to calendar test page
-        window.location.href = '/calendar';
-    }
-
-    const handleLoadingTest = () => {
-        // Placeholder for loading test functionality
-        setMessage('Loading test functionality');
-    }
-
     return(
         <div className="login-container">
             <div className="login-card">
@@ -238,41 +228,9 @@ function Login()
                         Sign Up
                     </button>
 
-                    <a 
-                        href="#" 
-                        className="forgot-password"
-                        onClick={(e) => { 
-                            e.preventDefault(); 
-                            window.location.href = '/forgot-password'; 
-                        }}
-                    >
+                    <a href="/forgot-password" className="forgot-password">
                         Forgot Password?
                     </a>
-
-                    <div className="test-buttons">
-                        <button 
-                            type="button"
-                            className="btn btn-test"
-                            onClick={handleCalendarTest}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M2 5.33333C2 4.59695 2.59695 4 3.33333 4H12.6667C13.403 4 14 4.59695 14 5.33333V12.6667C14 13.403 13.403 14 12.6667 14H3.33333C2.59695 14 2 13.403 2 12.6667V5.33333Z" stroke="currentColor" strokeWidth="1.5"/>
-                                <path d="M10.6667 2V5.33333M5.33333 2V5.33333M2 7.33333H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                            </svg>
-                            Calendar (Test)
-                        </button>
-
-                        <button 
-                            type="button"
-                            className="btn btn-test"
-                            onClick={handleLoadingTest}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 4"/>
-                            </svg>
-                            Loading (Test)
-                        </button>
-                    </div>
                 </form>
             </div>
         </div>

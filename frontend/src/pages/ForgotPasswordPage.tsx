@@ -1,12 +1,8 @@
-import ForgotPassword from '../components/ForgotPassword';
+import ForgotPassword from '../components/ForgotPassword.tsx';
 
-function ForgotPasswordPage() 
+const ForgotPasswordPage = () =>
 {
-    return (
-        <div>
-            <ForgotPassword />
-        </div>
-    );
-}
+    return <ForgotPassword />;
+};
 
 export default ForgotPasswordPage;
