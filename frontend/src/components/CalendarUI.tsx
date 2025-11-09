@@ -2,6 +2,68 @@ import React, { useState, useEffect } from 'react';
 import { buildPath } from './Path.ts';
 import { retrieveToken, storeToken } from '../tokenStorage.ts';
 
+type EventRecord = {
+    date?: string;
+    time?: string;
+};
+
+const parseEventDateTime = (dateStr?: string, timeStr?: string): Date | null => {
+    if (!dateStr) return null;
+
+    const normalizedDate = dateStr.trim();
+    const separators = normalizedDate.includes('-') ? '-' : '/';
+    const dateParts = normalizedDate.split(separators).map(part => parseInt(part, 10));
+
+    if (dateParts.length !== 3 || dateParts.some(isNaN)) {
+        return null;
+    }
+
+    let [month, day, year] = dateParts;
+    if (year < 100) {
+        year += 2000;
+    }
+    let hours = 23;
+    let minutes = 59;
+
+    if (timeStr) {
+        const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (match) {
+            let parsedHours = parseInt(match[1], 10) % 12;
+            const parsedMinutes = parseInt(match[2], 10);
+            const period = match[3].toUpperCase();
+
+            if (!Number.isNaN(parsedMinutes)) {
+                minutes = parsedMinutes;
+            }
+            if (period === 'PM') {
+                parsedHours += 12;
+            }
+            hours = parsedHours;
+        }
+    }
+
+    return new Date(year, month - 1, day, hours, minutes, 59, 999);
+};
+
+const isEventLate = (event: EventRecord): boolean => {
+    if (!event || !event.date) return false;
+    const eventDate = parseEventDateTime(event.date, event.time);
+    if (!eventDate) return false;
+    return eventDate.getTime() < Date.now();
+};
+
+const isEventToday = (event: EventRecord): boolean => {
+    if (!event || !event.date) return false;
+    const eventDate = parseEventDateTime(event.date, event.time);
+    if (!eventDate) return false;
+    const today = new Date();
+    return (
+        eventDate.getFullYear() === today.getFullYear() &&
+        eventDate.getMonth() === today.getMonth() &&
+        eventDate.getDate() === today.getDate()
+    );
+};
+
 type CalendarUIProps = {
     friendCard?: React.ReactNode;
 };
@@ -419,23 +481,33 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     <span id="cardSearchResult">{searchResults}</span>
                     {eventList.length > 0 && (
                         <div id="searchResultsList">
-                            {eventList.map((event, index) => (
-                                <div key={index} className="search-result-card">
-                                    <p><strong>Date:</strong> {event.date}</p>
-                                    <p><strong>Time:</strong> {event.time}</p>
-                                    <p><strong>Name:</strong> {event.name}</p>
-                                    <p><strong>Type:</strong> {event.event_type}</p>
-                                    <p><strong>Notes:</strong> {event.notes}</p>
-                                        {((event.friends && event.friends.length > 0) || event.friend_id) && 
+                            {eventList.map((event, index) => {
+                                const late = isEventLate(event);
+                                const upcoming = !late && isEventToday(event);
+                                return (
+                                    <div key={index} className="search-result-card">
+                                        {(late || upcoming) && (
+                                            <div className="event-status-wrapper">
+                                                {upcoming && <span className="event-status-tag upcoming">Upcoming</span>}
+                                                {late && <span className="event-status-tag late">Late</span>}
+                                            </div>
+                                        )}
+                                        <p><strong>Date:</strong> {event.date}</p>
+                                        <p><strong>Time:</strong> {event.time}</p>
+                                        <p><strong>Name:</strong> {event.name}</p>
+                                        <p><strong>Type:</strong> {event.event_type}</p>
+                                        <p><strong>Notes:</strong> {event.notes}</p>
+                                            {((event.friends && event.friends.length > 0) || event.friend_id) && 
                                             <p><strong>Friend:</strong> {getFriendNames(event.friends || event.friend_id)}</p>}
-                                    <div className="result-actions">
-                                        <button type="button" id="deleteEventButton" className="buttons"
-                                        onClick={() => deleteEvent(event._id,event.userId)}>Delete Event</button>
-                                        <button type="button" id="populateEditEvent" className="buttons"
-                                        onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friends || event.friend_id)}>Edit Event</button>
+                                        <div className="result-actions">
+                                            <button type="button" id="deleteEventButton" className="buttons"
+                                            onClick={() => deleteEvent(event._id,event.userId)}>Delete Event</button>
+                                            <button type="button" id="populateEditEvent" className="buttons"
+                                            onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friends || event.friend_id)}>Edit Event</button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -489,46 +561,54 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                         <p className="empty-state">No events yet. Start by adding one above.</p>
                     ) : (
                         <div className="events-list">
-                            {allEvents.map((event, index) => (
-                                <div key={event._id ?? index} className="event-item">
-                                    <div className="event-item-header">
-                                        <span className="event-item-name">{event.name || 'Untitled Event'}</span>
-                                        <span className="event-item-type">{event.event_type || 'General'}</span>
+                            {allEvents.map((event, index) => {
+                                const late = isEventLate(event);
+                                const upcoming = !late && isEventToday(event);
+                                return (
+                                    <div key={event._id ?? index} className="event-item">
+                                        <div className="event-item-header">
+                                            <span className="event-item-name">{event.name || 'Untitled Event'}</span>
+                                            <div className="event-item-tags">
+                                                <span className="event-item-type">{event.event_type || 'General'}</span>
+                                                {upcoming && <span className="event-status-tag upcoming">Upcoming</span>}
+                                                {late && <span className="event-status-tag late">Late</span>}
+                                            </div>
+                                        </div>
+                                        <div className="event-item-meta">
+                                            <span><strong>Date:</strong> {event.date || '—'}</span>
+                                            <span><strong>Time:</strong> {event.time || '—'}</span>
+                                        </div>
+                                        {event.notes && <p className="event-item-notes">{event.notes}</p>}
+                                        {((event.friends && event.friends.length > 0) || event.friend_id) && (
+                                            <p className="event-item-friends"><strong>Friends:</strong> {getFriendNames(event.friends || event.friend_id)}</p>
+                                        )}
+                                        <div className="event-item-actions">
+                                            <button
+                                                type="button"
+                                                className="buttons"
+                                                onClick={() => populateEvent(
+                                                    event._id,
+                                                    event.date,
+                                                    event.time,
+                                                    event.name,
+                                                    event.event_type,
+                                                    event.notes,
+                                                    event.friends || event.friend_id,
+                                                )}
+                                            >
+                                                Edit Event
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="buttons danger"
+                                                onClick={() => deleteEvent(event._id, event.userId)}
+                                            >
+                                                Delete Event
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="event-item-meta">
-                                        <span><strong>Date:</strong> {event.date || '—'}</span>
-                                        <span><strong>Time:</strong> {event.time || '—'}</span>
-                                    </div>
-                                    {event.notes && <p className="event-item-notes">{event.notes}</p>}
-                                    {((event.friends && event.friends.length > 0) || event.friend_id) && (
-                                        <p className="event-item-friends"><strong>Friends:</strong> {getFriendNames(event.friends || event.friend_id)}</p>
-                                    )}
-                                    <div className="event-item-actions">
-                                        <button
-                                            type="button"
-                                            className="buttons"
-                                            onClick={() => populateEvent(
-                                                event._id,
-                                                event.date,
-                                                event.time,
-                                                event.name,
-                                                event.event_type,
-                                                event.notes,
-                                                event.friends || event.friend_id,
-                                            )}
-                                        >
-                                            Edit Event
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="buttons danger"
-                                            onClick={() => deleteEvent(event._id, event.userId)}
-                                        >
-                                            Delete Event
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </section>
