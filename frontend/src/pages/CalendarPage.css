@@ -287,6 +287,36 @@
     color: #305a9a;
 }
 
+.event-status-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.event-status-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.event-status-tag.late {
+    background: linear-gradient(135deg, #951a2c 0%, #6b0f19 100%);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(149, 26, 44, 0.35);
+}
+
+.event-status-tag.upcoming {
+    background: linear-gradient(135deg, #10203f 0%, #0b182f 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 20px rgba(11, 24, 47, 0.35);
+}
+
 .result-actions {
     display: flex;
     gap: 12px;
@@ -384,6 +414,14 @@
     align-items: baseline;
     gap: 12px;
     margin-bottom: 10px;
+}
+
+.event-item-tags {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .event-item-name,
