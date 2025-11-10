@@ -3,7 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 import { storeToken, } from '../tokenStorage.ts';
 import { buildPath } from './Path.ts';
 import './Login.css';
-import logo from '../assets/p3-logo.svg';
+import logo from '../assets/p3logo.png';
 
 interface JwtPayload 
 {
