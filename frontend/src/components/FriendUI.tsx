@@ -29,7 +29,7 @@ function FriendUI({ className = '' }: FriendUIProps)
     
     // Pagination state for all friends list
     const [currentAllFriendsPage, setCurrentAllFriendsPage] = useState(1);
-    const [allFriendsPerPage] = useState(2); // Set to 2 for testing pagination with current data
+    const [allFriendsPerPage] = useState(3); // Set to 3 for testing pagination with current data
 
     useEffect(() => {
         loadAllFriends();
@@ -67,6 +67,13 @@ function FriendUI({ className = '' }: FriendUIProps)
             {
                 setMessage( res.error );
                 handleTokenExpiration(res.error);
+                
+                // Clear form fields if already friends (since it's a valid attempt but relationship already exists)
+                if( res.error.includes('Already Friends') || res.error.includes('already friends') )
+                {
+                    setFriendId('');
+                    setNickname('');
+                }
                 return;
             }
             else
@@ -74,6 +81,10 @@ function FriendUI({ className = '' }: FriendUIProps)
                 setMessage('Friend has been added');
                 storeToken( res.jwtToken );
                 await loadAllFriends();
+                
+                // Clear all form fields after successful addition
+                setFriendId('');
+                setNickname('');
             }
         }
         catch(error:any)

@@ -693,6 +693,28 @@
         font-size: 0.85rem;
         min-width: 32px;
     }
+
+    /* Mobile friends pagination styles */
+    .friend-search-pagination,
+    .friends-list-pagination {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .friend-search-pagination .page-numbers,
+    .friends-list-pagination .page-numbers {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .friend-search-pagination .pagination-btn,
+    .friends-list-pagination .pagination-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+
+
 }
 
 /* Ensure search results list can expand */
@@ -737,44 +759,114 @@
 }
 
 /* Friends pagination specific styles */
-.friend-search-pagination,
+.friend-search-pagination {
+    background: rgba(11, 31, 63, 0.05);
+    border-radius: 12px;
+    padding: 8px;
+    margin: 16px 0 0 0;
+    border: 1px solid rgba(11, 31, 63, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    max-width: 100%;
+    overflow: hidden;
+}
+
 .friends-list-pagination {
-    background: rgba(48, 90, 154, 0.05);
+    background: rgba(11, 31, 63, 0.05);
     border-radius: 16px;
     padding: 16px;
     margin-top: 20px;
-    border: 1px solid rgba(48, 90, 154, 0.1);
+    border: 1px solid rgba(11, 31, 63, 0.1);
 }
 
-.friend-search-pagination .pagination-btn,
+.friend-search-pagination .pagination-btn {
+    background: #0b1f3f;
+    border: 1px solid #0b1f3f;
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
 .friends-list-pagination .pagination-btn {
-    background: #305a9a;
-    border: 1px solid #305a9a;
+    background: #0b1f3f;
+    border: 1px solid #0b1f3f;
     color: #ffffff;
 }
 
-.friend-search-pagination .pagination-btn:hover:not(:disabled),
+.friend-search-pagination .pagination-btn:hover:not(:disabled) {
+    background: #152a4f;
+    border-color: #152a4f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .friends-list-pagination .pagination-btn:hover:not(:disabled) {
-    background: #3d6bb3;
-    border-color: #3d6bb3;
+    background: #152a4f;
+    border-color: #152a4f;
 }
 
-.friend-search-pagination .page-number,
+.friend-search-pagination .pagination-btn:disabled,
+.friends-list-pagination .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .friends-list-pagination .page-number {
-    background: rgba(48, 90, 154, 0.1);
-    border: 1px solid rgba(48, 90, 154, 0.3);
-    color: #305a9a;
+    background: rgba(11, 31, 63, 0.1) !important;
+    border: 1px solid rgba(11, 31, 63, 0.3) !important;
+    color: #0b1f3f !important;
 }
 
-.friend-search-pagination .page-number:hover,
+.friend-search-pagination .page-number {
+    background: rgba(11, 31, 63, 0.1) !important;
+    border: 1px solid rgba(11, 31, 63, 0.3) !important;
+    color: #0b1f3f !important;
+}
+
+.friend-search-pagination .page-number:hover {
+    background: rgba(11, 31, 63, 0.2);
+    transform: translateY(-1px);
+}
+
 .friends-list-pagination .page-number:hover {
-    background: rgba(48, 90, 154, 0.2);
+    background: rgba(11, 31, 63, 0.2);
 }
 
 .friend-search-pagination .page-number.active,
 .friends-list-pagination .page-number.active {
-    background: #305a9a;
+    background: #0b1f3f !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.friend-search-pagination .page-number.active:hover {
+    background: #0b1f3f !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.friends-list-pagination .page-number.active {
+    background: #0b1f3f;
     color: #ffffff;
+}
+
+/* Ensure page numbers container doesn't overflow */
+.friends-list-pagination .page-numbers {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Friend selector pagination */

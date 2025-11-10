@@ -78,6 +78,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
     const [message,setMessage] = useState('');
+    const [messageVisible, setMessageVisible] = useState(false);
     const [searchResults,setResults] = useState('');
     const [search,setSearchValue] = React.useState('');
     const [eventId, setEventId] = React.useState('');
@@ -87,6 +88,23 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     const [selectedFriends,setSelectedFriends] = React.useState<string[]>([]);
     const [notes,setNotes] = React.useState('');
     const [time,setTime] = React.useState('');
+
+    // Function to set message with fade in/out animation
+    const setTemporaryMessage = (msg: string) => {
+        setMessage(msg);
+        setMessageVisible(true);
+        
+        // Fade out after 2.5 seconds (250ms before the 3-second total)
+        setTimeout(() => {
+            setMessageVisible(false);
+        }, 2750);
+        
+        // Clear message after fade out completes
+        setTimeout(() => {
+            setMessage('');
+        }, 3000);
+    };
+
     const [eventList, setEventList] = useState<any[]>([]); // stores events in a list
     const [allEvents, setAllEvents] = useState<any[]>([]);
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
@@ -239,11 +257,11 @@ function CalendarUI({ friendCard }: CalendarUIProps)
 
             if( res.error.length > 0 )
             {
-                setMessage( "API Error:" + res.error );
+                setTemporaryMessage( "API Error:" + res.error );
             }
             else
             {
-                setMessage('Event has been added');
+                setTemporaryMessage('Event has been added');
                 storeToken( res.jwtToken );
                 await loadAllEvents();
                 clearEdit();
@@ -251,7 +269,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         }
         catch(error:any)
         {
-            setMessage(error.toString());
+            setTemporaryMessage(error.toString());
         }
     };
 
@@ -370,13 +388,24 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         setNotes('');
     }
 
+    async function handleEventAction(e:any) : Promise<void>
+    {
+        if (eventId) {
+            // If eventId exists, we're editing
+            await editEvent(e);
+        } else {
+            // If no eventId, we're adding
+            await addEvent(e);
+        }
+    }
+
     async function editEvent(e:any) : Promise<void>
     {
         e.preventDefault();
 
         if(!eventId)
         {
-            setMessage('Event not selected');
+            setTemporaryMessage('Event not selected');
             return;
         }
 
@@ -408,11 +437,11 @@ function CalendarUI({ friendCard }: CalendarUIProps)
 
             if( res.error.length > 0 )
             {
-                setMessage( "API Error:" + res.error );
+                setTemporaryMessage( "API Error:" + res.error );
             }
             else
             {
-                setMessage('Event has been edited');
+                setTemporaryMessage('Event has been edited');
                 storeToken( res.jwtToken );
                 clearEdit();
                 await loadAllEvents();
@@ -424,7 +453,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         }
         catch(error:any)
         {
-            setMessage(error.toString());
+            setTemporaryMessage(error.toString());
         }
     };
 
@@ -708,12 +737,20 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     <input type="text" id="cardText" placeholder="Notes" value={notes}
                     onChange={handleSetNotes} />
                     <div className="form-actions">
-                        <button type="button" id="addEventButton" className="buttons"
-                        onClick={addEvent}>Add Event</button>
-                        <button type="button" id="editEventButton" className="buttons"
-                        onClick={editEvent}>Edit Event</button>
+                        <button type="button" id="eventActionButton" className="buttons"
+                        onClick={handleEventAction}>
+                            {eventId ? 'Edit Event' : 'Add Event'}
+                        </button>
                     </div>
-                    <span id="cardAddResult">{message}</span>
+                    <span 
+                        id="cardAddResult" 
+                        style={{ 
+                            opacity: messageVisible ? 1 : 0, 
+                            transition: 'opacity 0.25s ease-in-out' 
+                        }}
+                    >
+                        {message}
+                    </span>
                 </div>
                 {friendCard}
                 <section className="card-section events-card">
