@@ -15,21 +15,35 @@ function FriendUI({ className = '' }: FriendUIProps)
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
     const [message,setMessage] = useState('');
-    const [searchResults,setResults] = useState('');
-    const [search,setSearchValue] = React.useState('');
+    const [messageVisible, setMessageVisible] = useState(false);
     const [id, setId] = React.useState('');
     const [friendId,setFriendId] = React.useState('');
     const [nickname,setNickname] = React.useState('');
-    const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     const [allFriends, setAllFriends] = useState<any[]>([]);
-
-    // Pagination state for friend search results
-    const [currentFriendSearchPage, setCurrentFriendSearchPage] = useState(1);
-    const [friendSearchPerPage] = useState(2); // Set to 2 for testing pagination with current data
+    const [friendCode, setFriendCode] = useState('');
     
     // Pagination state for all friends list
     const [currentAllFriendsPage, setCurrentAllFriendsPage] = useState(1);
     const [allFriendsPerPage] = useState(3); // Set to 3 for testing pagination with current data
+    
+    // Search state for friends list
+    const [friendsListSearch, setFriendsListSearch] = useState('');
+
+    // Function to set message with fade in/out animation
+    const setTemporaryMessage = (msg: string) => {
+        setMessage(msg);
+        setMessageVisible(true);
+        
+        // Fade out after 2.5 seconds (250ms before the 3-second total)
+        setTimeout(() => {
+            setMessageVisible(false);
+        }, 2750);
+        
+        // Clear message after fade out completes
+        setTimeout(() => {
+            setMessage('');
+        }, 3000);
+    };
 
     useEffect(() => {
         loadAllFriends();
@@ -65,7 +79,7 @@ function FriendUI({ className = '' }: FriendUIProps)
 
             if( res.error &&res.error.length > 0 )
             {
-                setMessage( res.error );
+                setTemporaryMessage( res.error );
                 handleTokenExpiration(res.error);
                 
                 // Clear form fields if already friends (since it's a valid attempt but relationship already exists)
@@ -78,7 +92,7 @@ function FriendUI({ className = '' }: FriendUIProps)
             }
             else
             {
-                setMessage('Friend has been added');
+                setTemporaryMessage('Friend has been added');
                 storeToken( res.jwtToken );
                 await loadAllFriends();
                 
@@ -89,62 +103,17 @@ function FriendUI({ className = '' }: FriendUIProps)
         }
         catch(error:any)
         {
-            setMessage(error.toString());
+            setTemporaryMessage(error.toString());
         }
     };
 
-    async function searchFriend(e:any) : Promise<void>
-    {
-        e.preventDefault();
 
-        var obj = {userId:userId,search:search,jwtToken:retrieveToken()};
-        var js = JSON.stringify(obj);
-        
-
-        try
-        {
-            const response = await
-            fetch(buildPath('api/searchfriend'),
-            {method:'POST',body:js,headers:{'Content-Type':
-            'application/json'}});
-
-            let txt = await response.text();
-            let res = JSON.parse(txt);
-
-            if( res.error &&res.error.length > 0 )
-            {
-                handleTokenExpiration(res.error);
-                return;
-            }
-
-            let _results = res.results;
-
-            setFriendList(_results);
-            setCurrentFriendSearchPage(1); // Reset to first page when new search is performed
-        
-            if(_results && _results.length > 0)
-            {
-                setResults(`Found ${_results.length} friend(s)`);
-            }
-            else
-            {
-                setResults('No friends found');
-            }
-            storeToken( res.jwtToken );
-            await loadAllFriends();
-        }
-        catch(error:any)
-        {
-            alert(error.toString());
-            setResults(error.toString());
-        }
-    };
 
     async function deleteFriend(_id:string,userId:string) : Promise<void>
     {
         //e.preventDefault();
 
-        var obj = {_id:_id,userId:userId,search:search,jwtToken:retrieveToken()};
+        var obj = {_id:_id,userId:userId,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
         
         try
@@ -168,9 +137,8 @@ function FriendUI({ className = '' }: FriendUIProps)
         catch(error:any)
         {
             alert(error.toString());
-            setResults(error.toString());
+            setTemporaryMessage(error.toString());
         }
-        setFriendList(prev => prev.filter(e => e._id !== _id));
         setAllFriends(prev => prev.filter(friend => friend._id !== _id));
         await loadAllFriends();
     };
@@ -180,6 +148,14 @@ function FriendUI({ className = '' }: FriendUIProps)
         setId( _id );
         setFriendId( friend_id );
         setNickname( nickname );
+        
+        // Scroll to the Friends section header
+        setTimeout(() => {
+            const friendUIDiv = document.getElementById('FriendUIDiv');
+            if (friendUIDiv) {
+                friendUIDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100); // Small delay to ensure state updates are complete
     }
 
     function clearEdit() : void
@@ -195,7 +171,7 @@ function FriendUI({ className = '' }: FriendUIProps)
 
         if(!id)
         {
-            setMessage('Friend not selected');
+            setTemporaryMessage('Friend not selected');
             return;
         }
 
@@ -220,30 +196,26 @@ function FriendUI({ className = '' }: FriendUIProps)
 
             if( res.error.length > 0 )
             {
-                setMessage( "API Error:" + res.error );
+                setTemporaryMessage( "API Error:" + res.error );
             }
             else
             {
-                setMessage('Friend has been edited');
+                setTemporaryMessage('Friend has been edited');
                 storeToken( res.jwtToken );
                 clearEdit();
                 
-                // recall searchFriend (need fake friend for preventDefault to not cause errors)
-                await searchFriend({preventDefault: () => {}});
+
                 await loadAllFriends();
 
             }
         }
         catch(error:any)
         {
-            setMessage(error.toString());
+            setTemporaryMessage(error.toString());
         }
     };
 
-    function handleSearchTextChange( e: any ) : void
-    {
-        setSearchValue( e.target.value );
-    }
+
     function handleSetFriendId( e: any ) : void
     {
         setFriendId( e.target.value );
@@ -251,6 +223,33 @@ function FriendUI({ className = '' }: FriendUIProps)
     function handleSetNickname( e:any ) : void
     {
         setNickname( e.target.value );
+    }
+
+    function handleFriendsListSearch( e: any ) : void
+    {
+        setFriendsListSearch( e.target.value );
+        setCurrentAllFriendsPage(1); // Reset to first page when searching
+    }
+
+    async function handleFriendAction(e:any) : Promise<void>
+    {
+        if (id) {
+            // If id exists, we're editing
+            await editFriend(e);
+        } else {
+            // If no id, we're adding
+            await addFriend(e);
+        }
+    }
+
+    function toggleFriendCode() : void
+    {
+        // Toggle between showing and hiding the friend code
+        if (friendCode) {
+            setFriendCode(''); // Hide the code
+        } else {
+            setFriendCode(userId); // Show the user's FriendID
+        }
     }
 
     async function loadAllFriends() : Promise<void>
@@ -286,35 +285,24 @@ function FriendUI({ className = '' }: FriendUIProps)
         }
     }
 
-    // Friend search results pagination functions
-    const totalFriendSearchPages = Math.ceil(friendList.length / friendSearchPerPage);
-    const friendSearchStartIndex = (currentFriendSearchPage - 1) * friendSearchPerPage;
-    const friendSearchEndIndex = friendSearchStartIndex + friendSearchPerPage;
-    const currentPageFriendSearch = friendList.slice(friendSearchStartIndex, friendSearchEndIndex);
 
-    const goToFriendSearchPage = (page: number) => {
-        if (page >= 1 && page <= totalFriendSearchPages) {
-            setCurrentFriendSearchPage(page);
-        }
-    };
 
-    const goToPreviousFriendSearchPage = () => {
-        if (currentFriendSearchPage > 1) {
-            setCurrentFriendSearchPage(currentFriendSearchPage - 1);
-        }
-    };
-
-    const goToNextFriendSearchPage = () => {
-        if (currentFriendSearchPage < totalFriendSearchPages) {
-            setCurrentFriendSearchPage(currentFriendSearchPage + 1);
-        }
-    };
-
-    // All friends list pagination functions
-    const totalAllFriendsPages = Math.ceil(allFriends.length / allFriendsPerPage);
+    // All friends list pagination functions with search filtering
+    const filteredAllFriends = allFriends.filter(friend => {
+        if (!friendsListSearch) return true;
+        const searchLower = friendsListSearch.toLowerCase();
+        return (
+            friend.FirstName?.toLowerCase().includes(searchLower) ||
+            friend.LastName?.toLowerCase().includes(searchLower) ||
+            friend.nickname?.toLowerCase().includes(searchLower) ||
+            friend.friend_id?.toLowerCase().includes(searchLower)
+        );
+    });
+    
+    const totalAllFriendsPages = Math.ceil(filteredAllFriends.length / allFriendsPerPage);
     const allFriendsStartIndex = (currentAllFriendsPage - 1) * allFriendsPerPage;
     const allFriendsEndIndex = allFriendsStartIndex + allFriendsPerPage;
-    const currentPageAllFriends = allFriends.slice(allFriendsStartIndex, allFriendsEndIndex);
+    const currentPageAllFriends = filteredAllFriends.slice(allFriendsStartIndex, allFriendsEndIndex);
 
     const goToAllFriendsPage = (page: number) => {
         if (page >= 1 && page <= totalAllFriendsPages) {
@@ -338,95 +326,71 @@ function FriendUI({ className = '' }: FriendUIProps)
         <>
         <div id="FriendUIDiv" className={`card-section ${className}`.trim()}>
             <div className="section-heading">Friends</div>
-            <div className="subheading">Search</div>
-            <div className="search-row">
-                <input type="text" id="friendSearchInput" placeholder="Friend To Search For"
-                onChange={handleSearchTextChange} />
-                <button type="button" id="searchCardButton" className="buttons"
-                onClick={searchFriend}>Search Friend</button>
-            </div>
-            <span id="cardSearchResult">
-                {searchResults}
-                {friendList.length > friendSearchPerPage && (
-                    <span> - Showing {Math.min(friendSearchStartIndex + 1, friendList.length)}-{Math.min(friendSearchEndIndex, friendList.length)} of {friendList.length} (Page {currentFriendSearchPage} of {totalFriendSearchPages})</span>
-                )}
-            </span>
-            {friendList.length > 0 && (
-                <div id="searchResultsList">
-                    {currentPageFriendSearch.map((friend, index) => (
-                        <div key={index} style={{border: '1px solid #ccc', margin: '10px', padding: '10px'}}>
-                            <p><strong>FriendID:</strong> {friend.friend_id}</p>
-                            <p><strong>Nickname:</strong> {friend.Nickname}</p>
-                            <p><strong>First Name:</strong> {friend.FirstName}</p>
-                            <p><strong>Last Name:</strong> {friend.LastName}</p>
-                            <button type="button" id="deleteFriendButton" className="buttons"
-                            onClick={() => deleteFriend(friend._id,friend.userId)}> Delete Friend </button><br /><br />
-                            <button type="button" id="populateEditFriend" className="buttons"
-                            onClick={() => populateFriend(friend._id,friend.friend_id,friend.nickname)}> Edit Friend </button><br />
-                        </div>
-                    ))}
-                    
-                    {/* Friend Search Pagination Controls */}
-                    {totalFriendSearchPages > 1 && (
-                        <div className="pagination-controls friend-search-pagination">
-                            <button
-                                type="button"
-                                className="pagination-btn"
-                                onClick={goToPreviousFriendSearchPage}
-                                disabled={currentFriendSearchPage === 1}
-                            >
-                                Previous
-                            </button>
-                            
-                            <div className="page-numbers">
-                                {Array.from({ length: totalFriendSearchPages }, (_, i) => i + 1).map(page => (
-                                    <button
-                                        key={page}
-                                        type="button"
-                                        className={`page-number ${page === currentFriendSearchPage ? 'active' : ''}`}
-                                        onClick={() => goToFriendSearchPage(page)}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            <button
-                                type="button"
-                                className="pagination-btn"
-                                onClick={goToNextFriendSearchPage}
-                                disabled={currentFriendSearchPage === totalFriendSearchPages}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
+
             <div className="subheading">Add / Edit Friend</div>
             <input type="text" id="cardText" placeholder="FriendID" value={friendId}
             onChange={handleSetFriendId} />
             <input type="text" id="cardText" placeholder="Nickname" value={nickname}
             onChange={handleSetNickname} />
             <div className="form-actions">
-                <button type="button" id="addFriendButton" className="buttons"
-                onClick={addFriend}>Add Friend</button>
-                <button type="button" id="editFriendButton" className="buttons"
-                onClick={editFriend}>Edit Friend</button>
+                <button type="button" id="friendActionButton" className="buttons"
+                onClick={handleFriendAction}>
+                    {id ? 'Edit Friend' : 'Add Friend'}
+                </button>
+                {id && (
+                    <button type="button" id="cancelEditButton" className="buttons"
+                    onClick={clearEdit}>Cancel</button>
+                )}
             </div>
-            <span id="cardAddResult">{message}</span>
+            <span 
+                id="cardAddResult" 
+                style={{ 
+                    opacity: messageVisible ? 1 : 0, 
+                    transition: 'opacity 0.25s ease-in-out' 
+                }}
+            >
+                {message}
+            </span>
+            
+            <div className="subheading">Your Friend Code</div>
+            <div className="form-actions">
+                <button type="button" id="toggleFriendCodeButton" className="buttons"
+                onClick={toggleFriendCode}>
+                    {friendCode ? 'Hide My Code' : 'Show My Code'}
+                </button>
+            </div>
+            {friendCode && (
+                <div className="friend-code-display">
+                    <strong>Your Friend ID: </strong>
+                    <span className="friend-code">{friendCode}</span>
+                </div>
+            )}
         </div>
         <section className="card-section friends-card">
             <div className="section-heading">
                 Friends List
-                {allFriends.length > allFriendsPerPage && (
+                {filteredAllFriends.length > allFriendsPerPage && (
                     <span style={{ fontSize: '0.9rem', fontWeight: 'normal', marginLeft: '8px' }}>
-                        - Showing {Math.min(allFriendsStartIndex + 1, allFriends.length)}-{Math.min(allFriendsEndIndex, allFriends.length)} of {allFriends.length} (Page {currentAllFriendsPage} of {totalAllFriendsPages})
+                        - Showing {Math.min(allFriendsStartIndex + 1, filteredAllFriends.length)}-{Math.min(allFriendsEndIndex, filteredAllFriends.length)} of {filteredAllFriends.length} (Page {currentAllFriendsPage} of {totalAllFriendsPages})
+                        {friendsListSearch && ` (filtered from ${allFriends.length} total)`}
                     </span>
                 )}
             </div>
+            
+            {/* Friends List Search Bar */}
+            <div className="search-container" style={{ marginBottom: '16px' }}>
+                <input 
+                    type="text" 
+                    placeholder="Search friends by name, nickname, or ID..." 
+                    value={friendsListSearch}
+                    onChange={handleFriendsListSearch}
+                    className="search-input"
+                />
+            </div>
             {allFriends.length === 0 ? (
                 <p className="empty-state">No friends yet. Add one using the card above.</p>
+            ) : filteredAllFriends.length === 0 ? (
+                <p className="empty-state">No friends found matching "{friendsListSearch}". Try a different search term.</p>
             ) : (
                 <div className="friends-list">
                     {currentPageAllFriends.map((friend, index) => (

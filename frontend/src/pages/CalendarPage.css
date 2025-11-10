@@ -214,11 +214,7 @@
     background: linear-gradient(135deg, #14294f 0%, #0d1f3d 100%);
 }
 
-#searchCardButton:hover {
-    background: #ffc54a;
-    color: #0b1f3f;
-    box-shadow: 0 10px 20px rgba(255, 197, 74, 0.35);
-}
+
 
 .search-collapsible {
     max-height: 2000px; /* Increased to accommodate more results with pagination */
@@ -419,6 +415,66 @@
     align-items: center;
 }
 
+/* Friend code display styles */
+.friend-code-display {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(11, 31, 63, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(11, 31, 63, 0.1);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.friend-code {
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #0b1f3f;
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 2px solid #0b1f3f;
+    display: block;
+    margin: 8px auto 0;
+    letter-spacing: 1px;
+    user-select: all;
+    word-break: break-all;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+}
+
+/* Time input container */
+.time-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.time-input-container input {
+    flex: 1;
+    margin: 0;
+}
+
+.ampm-select {
+    width: auto !important;
+    min-width: 70px;
+    margin: 0 !important;
+    padding: 14px 12px !important;
+    text-align: center;
+    font-weight: 600;
+}
+
+.input-error {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+}
+
 .calendar-lower {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -448,10 +504,7 @@
     color: #305a9a;
 }
 
-.friend-card #cardSearchResult {
-    display: block;
-    margin-bottom: 12px;
-}
+
 
 
 .events-card,
@@ -606,7 +659,6 @@
     transform: translateY(0);
 }
 
-.card-section #cardSearchResult,
 .card-section #cardAddResult {
     display: block;
     margin-top: 12px;
@@ -695,33 +747,37 @@
     }
 
     /* Mobile friends pagination styles */
-    .friend-search-pagination,
     .friends-list-pagination {
         flex-wrap: wrap;
         gap: 8px;
     }
 
-    .friend-search-pagination .page-numbers,
     .friends-list-pagination .page-numbers {
         flex-wrap: wrap;
         justify-content: center;
         gap: 4px;
     }
 
-    .friend-search-pagination .pagination-btn,
     .friends-list-pagination .pagination-btn {
         padding: 6px 12px;
         font-size: 0.85rem;
     }
 
+    /* Mobile friend code styles */
+    .friend-code {
+        font-size: 0.9rem;
+        padding: 6px 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .friend-code-display {
+        padding: 8px 12px;
+    }
+
 
 }
 
-/* Ensure search results list can expand */
-#searchResultsList {
-    max-height: none !important;
-    overflow: visible !important;
-}
+
 
 /* Events pagination specific styles */
 .events-pagination {
@@ -759,20 +815,6 @@
 }
 
 /* Friends pagination specific styles */
-.friend-search-pagination {
-    background: rgba(11, 31, 63, 0.05);
-    border-radius: 12px;
-    padding: 8px;
-    margin: 16px 0 0 0;
-    border: 1px solid rgba(11, 31, 63, 0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    max-width: 100%;
-    overflow: hidden;
-}
 
 .friends-list-pagination {
     background: rgba(11, 31, 63, 0.05);
@@ -782,18 +824,7 @@
     border: 1px solid rgba(11, 31, 63, 0.1);
 }
 
-.friend-search-pagination .pagination-btn {
-    background: #0b1f3f;
-    border: 1px solid #0b1f3f;
-    color: #ffffff;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
+
 
 .friends-list-pagination .pagination-btn {
     background: #0b1f3f;
@@ -801,19 +832,13 @@
     color: #ffffff;
 }
 
-.friend-search-pagination .pagination-btn:hover:not(:disabled) {
-    background: #152a4f;
-    border-color: #152a4f;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
+
 
 .friends-list-pagination .pagination-btn:hover:not(:disabled) {
     background: #152a4f;
     border-color: #152a4f;
 }
 
-.friend-search-pagination .pagination-btn:disabled,
 .friends-list-pagination .pagination-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -826,33 +851,17 @@
     color: #0b1f3f !important;
 }
 
-.friend-search-pagination .page-number {
-    background: rgba(11, 31, 63, 0.1) !important;
-    border: 1px solid rgba(11, 31, 63, 0.3) !important;
-    color: #0b1f3f !important;
-}
 
-.friend-search-pagination .page-number:hover {
-    background: rgba(11, 31, 63, 0.2);
-    transform: translateY(-1px);
-}
 
 .friends-list-pagination .page-number:hover {
     background: rgba(11, 31, 63, 0.2);
 }
 
-.friend-search-pagination .page-number.active,
 .friends-list-pagination .page-number.active {
     background: #0b1f3f !important;
     color: #ffffff !important;
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.friend-search-pagination .page-number.active:hover {
-    background: #0b1f3f !important;
-    color: #ffffff !important;
-    transform: translateY(-1px);
 }
 
 .friends-list-pagination .page-number.active {
@@ -956,4 +965,33 @@
 .friend-checkbox-item input[type="checkbox"]:checked + .friend-checkbox-label {
     color: #0b1f3f;
     font-weight: 600;
+}
+
+/* Friends List Search Input */
+.search-container {
+    margin-bottom: 16px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #c7ddf6;
+    background: #ffffff;
+    color: #0B1F3F;
+    font-size: 0.95rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #4A90E2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.search-input::placeholder {
+    color: #6B7A99;
+    font-style: italic;
 }

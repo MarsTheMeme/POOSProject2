@@ -88,6 +88,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     const [selectedFriends,setSelectedFriends] = React.useState<string[]>([]);
     const [notes,setNotes] = React.useState('');
     const [time,setTime] = React.useState('');
+    const [amPm,setAmPm] = React.useState('AM');
 
     // Function to set message with fade in/out animation
     const setTemporaryMessage = (msg: string) => {
@@ -229,6 +230,19 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     async function addEvent(e:any) : Promise<void>
     {
         e.preventDefault();
+        
+        // Validate date format
+        if (!date || !validateDateFormat(date)) {
+            setTemporaryMessage('Please enter date in MM/DD/YYYY format');
+            return;
+        }
+        
+        // Validate time format
+        if (!time || !validateTimeFormat(time, amPm)) {
+            setTemporaryMessage('Please enter time in HH:MM format');
+            return;
+        }
+        
         const friendsArray = selectedFriends.map(friendId => {
             const friend = friendList.find(f => f.friend_id === friendId);
             return {
@@ -236,7 +250,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 fullName: friend ? `${friend.FirstName} ${friend.LastName}` : friendId
             };
         });
-        var obj = {date:date,type:type,friends:friendsArray,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        var obj = {date:date,type:type,friends:friendsArray,name:name,notes:notes,userId:userId,time:`${time} ${amPm}`,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -361,7 +375,21 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         setType( event_type );
         setName( name );
         setNotes (notes );
-        setTime( time );
+        
+        // Split time into time and AM/PM parts
+        if (time) {
+            const timeParts = time.split(' ');
+            if (timeParts.length === 2) {
+                setTime(timeParts[0]); // HH:MM part
+                setAmPm(timeParts[1]); // AM/PM part
+            } else {
+                setTime(time);
+                setAmPm('AM'); // Default to AM if no AM/PM found
+            }
+        } else {
+            setTime('');
+            setAmPm('AM');
+        }
 
         if (Array.isArray(friends))
         {
@@ -375,6 +403,14 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         {
             setSelectedFriends([]);
         }
+        
+        // Scroll to the Add/Edit Event form
+        setTimeout(() => {
+            const addEditContainer = document.getElementById('addEditEventContainer');
+            if (addEditContainer) {
+                addEditContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100); // Small delay to ensure state updates are complete
     }
 
     function clearEdit() : void
@@ -382,6 +418,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         setEventId( '' );
         setDate('');
         setTime('');
+        setAmPm('AM');
         setName('');
         setType('');
         setSelectedFriends([]);
@@ -408,6 +445,18 @@ function CalendarUI({ friendCard }: CalendarUIProps)
             setTemporaryMessage('Event not selected');
             return;
         }
+        
+        // Validate date format
+        if (!date || !validateDateFormat(date)) {
+            setTemporaryMessage('Please enter date in MM/DD/YYYY format');
+            return;
+        }
+        
+        // Validate time format
+        if (!time || !validateTimeFormat(time, amPm)) {
+            setTemporaryMessage('Please enter time in HH:MM format');
+            return;
+        }
 
         const friendsArray = selectedFriends.map(friendId => {
             const friend = friendList.find(f => f.friend_id === friendId);
@@ -416,7 +465,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 fullName: friend ? `${friend.FirstName} ${friend.LastName}` : friendId
             };
         });
-        var obj = {_id:eventId,date:date,type:type,friends:friendsArray,name:name,notes:notes,userId:userId,time:time,jwtToken:retrieveToken()};
+        var obj = {_id:eventId,date:date,type:type,friends:friendsArray,name:name,notes:notes,userId:userId,time:`${time} ${amPm}`,jwtToken:retrieveToken()};
         var js = JSON.stringify(obj);
 
         try
@@ -461,9 +510,60 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     {
         setSearchValue( e.target.value );
     }
+    function validateDateFormat(value: string): boolean {
+        // MM/DD/YYYY format
+        const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+        return dateRegex.test(value);
+    }
+
+    function validateTimeFormat(timeValue: string, amPmValue: string): boolean {
+        if (!timeValue) {
+            return false;
+        }
+        
+        // Split time into parts
+        const parts = timeValue.split(':');
+        if (parts.length !== 2) {
+            return false;
+        }
+        
+        const hours = parseInt(parts[0], 10);
+        const minutes = parseInt(parts[1], 10);
+        
+        // Validate 12-hour format: hours 1-12, minutes 0-59
+        // Handle both single digit (1-9) and double digit (10-12) hours
+        const isValidHours = !isNaN(hours) && hours >= 1 && hours <= 12;
+        const isValidMinutes = !isNaN(minutes) && minutes >= 0 && minutes <= 59;
+        const isValidAmPm = (amPmValue === 'AM' || amPmValue === 'PM');
+        
+        return isValidHours && isValidMinutes && isValidAmPm;
+    }
+    
+
+
     function handleSetDate( e: any ) : void
     {
-        setDate( e.target.value );
+        let value = e.target.value;
+        
+        // Remove all non-numeric characters except existing slashes for processing
+        const numbersOnly = value.replace(/[^\d]/g, '');
+        
+        // Auto-format as user types: MM/DD/YYYY
+        if (numbersOnly.length >= 1) {
+            if (numbersOnly.length <= 2) {
+                value = numbersOnly;
+            } else if (numbersOnly.length <= 4) {
+                value = numbersOnly.slice(0, 2) + '/' + numbersOnly.slice(2);
+            } else if (numbersOnly.length <= 8) {
+                value = numbersOnly.slice(0, 2) + '/' + numbersOnly.slice(2, 4) + '/' + numbersOnly.slice(4);
+            } else {
+                // Limit to 8 digits (MMDDYYYY)
+                const limited = numbersOnly.slice(0, 8);
+                value = limited.slice(0, 2) + '/' + limited.slice(2, 4) + '/' + limited.slice(4);
+            }
+        }
+        
+        setDate(value);
     }
     function handleSetName( e:any ) : void
     {
@@ -480,7 +580,56 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     }
     function handleSetTime( e: any ) : void
     {
-        setTime( e.target.value );
+        let value = e.target.value;
+        
+        // Remove all non-numeric characters except existing colons for processing
+        const numbersOnly = value.replace(/[^\d]/g, '');
+        
+        // Auto-format as user types: H:MM or HH:MM (12-hour format)
+        if (numbersOnly.length >= 1) {
+            if (numbersOnly.length <= 2) {
+                value = numbersOnly;
+            } else if (numbersOnly.length <= 4) {
+                let hours = numbersOnly.slice(0, 2);
+                const minutes = numbersOnly.slice(2);
+                
+                // Convert leading zeros for hours in 12-hour format
+                const hoursNum = parseInt(hours, 10);
+                if (hoursNum === 0) {
+                    hours = '12'; // 00 becomes 12 in 12-hour format
+                } else if (hoursNum > 12) {
+                    // If someone types something like 13, 14, etc., convert to 12-hour
+                    hours = String(hoursNum > 12 ? hoursNum - 12 : hoursNum);
+                } else {
+                    hours = String(hoursNum); // Remove leading zero
+                }
+                
+                value = hours + ':' + minutes;
+            } else {
+                // Limit to 4 digits (HHMM)
+                const limited = numbersOnly.slice(0, 4);
+                let hours = limited.slice(0, 2);
+                const minutes = limited.slice(2);
+                
+                const hoursNum = parseInt(hours, 10);
+                if (hoursNum === 0) {
+                    hours = '12';
+                } else if (hoursNum > 12) {
+                    hours = String(hoursNum > 12 ? hoursNum - 12 : hoursNum);
+                } else {
+                    hours = String(hoursNum);
+                }
+                
+                value = hours + ':' + minutes;
+            }
+        }
+        
+        setTime(value);
+    }
+
+    function handleSetAmPm( e: any ) : void
+    {
+        setAmPm(e.target.value);
     }
 
     // Pagination functions
@@ -607,11 +756,29 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                         <p><strong>Notes:</strong> {event.notes}</p>
                                             {((event.friends && event.friends.length > 0) || event.friend_id) && 
                                             <p><strong>Friend:</strong> {getFriendNames(event.friends || event.friend_id)}</p>}
-                                        <div className="result-actions">
-                                            <button type="button" id="deleteEventButton" className="buttons"
-                                            onClick={() => deleteEvent(event._id,event.userId)}>Delete Event</button>
-                                            <button type="button" id="populateEditEvent" className="buttons"
-                                            onClick={() => populateEvent(event._id,event.date,event.time,event.name,event.event_type,event.notes,event.friends || event.friend_id)}>Edit Event</button>
+                                        <div className="event-item-actions">
+                                            <button
+                                                type="button"
+                                                className="buttons"
+                                                onClick={() => populateEvent(
+                                                    event._id,
+                                                    event.date,
+                                                    event.time,
+                                                    event.name,
+                                                    event.event_type,
+                                                    event.notes,
+                                                    event.friends || event.friend_id,
+                                                )}
+                                            >
+                                                Edit Event
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="buttons danger"
+                                                onClick={() => deleteEvent(event._id, event.userId)}
+                                            >
+                                                Delete Event
+                                            </button>
                                         </div>
                                     </div>
                                 );
@@ -657,12 +824,46 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 </div>
             </div>
             <div className="calendar-lower">
-                <div className="card-section event-card">
+                <div id="addEditEventContainer" className="card-section event-card">
                     <div className="section-heading">Add / Edit Event</div>
-                    <input type="text" id="cardText" placeholder="Date: MM/DD/YYYY" value={date}
-                    onChange={handleSetDate} />
-                    <input type="text" id="cardText" placeholder="Time: HH:MM AM/PM" value={time}
-                    onChange={handleSetTime} />
+                    <input 
+                        type="text" 
+                        id="cardText" 
+                        placeholder="Date: MM/DD/YYYY" 
+                        value={date}
+                        onChange={handleSetDate} 
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$"
+                        title="Enter numbers and the format will be applied automatically"
+                        style={{
+                            borderColor: date && !validateDateFormat(date) ? '#dc3545' : '',
+                            backgroundColor: date && !validateDateFormat(date) ? '#fff5f5' : ''
+                        }}
+                    />
+                    <div className="time-input-container">
+                        <input 
+                            type="text" 
+                            id="timeInput" 
+                            placeholder="Time: HH:MM" 
+                            value={time}
+                            onChange={handleSetTime} 
+                            maxLength={5}
+                            inputMode="numeric"
+                            pattern="^([1-9]|1[0-2]):[0-5][0-9]$"
+                            title="Enter numbers - format will be applied automatically"
+                            className={time && time.length > 0 && !validateTimeFormat(time, amPm) ? 'input-error' : ''}
+                        />
+                        <select 
+                            id="amPmSelect"
+                            value={amPm}
+                            onChange={handleSetAmPm}
+                            className="ampm-select"
+                        >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
                     <input type="text" id="cardText" placeholder="Name" value={name}
                     onChange={handleSetName} />
                     <input type="text" id="cardText" placeholder="Event Type" value={type}
