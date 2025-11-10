@@ -521,15 +521,8 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     onChange={handleSetTime} />
                     <input type="text" id="cardText" placeholder="Name" value={name}
                     onChange={handleSetName} />
-                    <select id="cardText" name="eventType" value={type}
-                    onChange={handleSetType} >
-                        <option value="">Select Event Type</option>
-                        <option value="Home">Home</option>
-                        <option value="Work">Work</option>
-                        <option value="School">School</option>
-                        <option value="Personal">Personal</option>
-                        <option value="Other">Other</option>
-                    </select>
+                    <input type="text" id="cardText" placeholder="Event Type" value={type}
+                    onChange={handleSetType} />
                     <label htmlFor="friendSelect">Select Friends (hold Ctrl/Cmd to select multiple):</label>
                     <select
                         id="friendSelect"
@@ -540,7 +533,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     >
                         {friendList.map((friend, index) => (
                             <option key={index} value={friend.friend_id}>
-                                {friend.firstName} {friend.lastName} ({friend.friend_id})
+                                {friend.FirstName} {friend.LastName}
                             </option>
                         ))}
                     </select>
