@@ -306,15 +306,15 @@
 }
 
 .event-status-tag.late {
-    background: linear-gradient(135deg, #951a2c 0%, #6b0f19 100%);
+    background: linear-gradient(135deg, #e53935 0%, #e53935 100%);
     color: #ffffff;
-    box-shadow: 0 8px 18px rgba(149, 26, 44, 0.35);
+    box-shadow: 0 8px 18px rgba(229, 57, 53, 0.35);
 }
 
 .event-status-tag.upcoming {
-    background: linear-gradient(135deg, #10203f 0%, #0b182f 100%);
-    color: #ffffff;
-    box-shadow: 0 10px 20px rgba(11, 24, 47, 0.35);
+    background: linear-gradient(135deg, #ffc54a 0%, #ffc54a 100%);
+    color: #000000;
+    box-shadow: 0 10px 20px rgba(255, 197, 74, 0.35);
 }
 
 .result-actions {
