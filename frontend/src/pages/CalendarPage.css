@@ -301,6 +301,12 @@
     text-transform: uppercase;
 }
 
+.event-status-tag.shared {
+    background: linear-gradient(135deg, #61dafbaa 0%, #61dafbaa 100%);
+    color: #000000;
+    box-shadow: 0 10px 20px rgba(97, 218, 251, 0.35);
+}
+
 .event-status-tag.late {
     background: linear-gradient(135deg, #e53935 0%, #e53935 100%);
     color: #ffffff;

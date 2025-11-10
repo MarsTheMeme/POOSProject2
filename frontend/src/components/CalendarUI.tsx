@@ -73,7 +73,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     let _ud : any = localStorage.getItem('user_data');
     let ud = JSON.parse( _ud );
     let userId : string = ud.id; // id from local Login/Signup tsx
-    //let userFriendID : string = ud.friend_id;
+    let userFriendID : string = ud.friend_id;
     // let _id : string;
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
@@ -107,6 +107,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     };
 
     const [eventList, setEventList] = useState<any[]>([]); // stores events in a list
+    const [friendEventList, setFriendEventList] = useState<any[]>([]); // stores shared events in a list
     const [allEvents, setAllEvents] = useState<any[]>([]);
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     const [isSearchExpanded, setIsSearchExpanded] = useState(true);
@@ -287,6 +288,37 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         }
     };
 
+    async function searchFriendEvents ( searchTerm : string ) : Promise<any[]>
+    {
+        var obj = {friend_id:userFriendID,search:searchTerm,jwtToken:retrieveToken()};
+        var js = JSON.stringify(obj);
+
+        try
+        {
+            const response = await
+            fetch(buildPath('api/friendidsearchevents'),
+            {method:'POST',body:js,headers:{'Content-Type':
+            'application/json'}});
+
+            let txt = await response.text();
+            let res = JSON.parse(txt);
+
+            if( res.error && res.error.length > 0 )
+            {
+                handleTokenExpiration(res.error);
+                return [];
+            }
+
+            storeToken( res.jwtToken );
+            return res.results || [];
+        }
+        catch( e:any )
+        {
+            console.error('Error searching friend events:', e);
+            return [];
+        }
+    }
+
     async function searchEvent(e:any) : Promise<void>
     {
         e.preventDefault();
@@ -312,14 +344,20 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 return;
             }
 
-            let _results = res.results;
+            let userEvents = res.results || [];
 
-            setEventList(_results);
+            setEventList(userEvents);
+            
+            const friendEvents = await searchFriendEvents(search);
+            setFriendEventList(friendEvents);
+
             setCurrentPage(1); // Reset to first page when new search is performed
-        
-            if(_results && _results.length > 0)
+
+            const totalEvents = userEvents.length + friendEvents.length;
+
+            if(totalEvents > 0)
             {
-                setResults(`Found ${_results.length} event(s)`);
+                setResults(`Found ${totalEvents} event(s) (${userEvents.length} yours, ${friendEvents.length} shared)`);
             }
             else
             {
@@ -633,10 +671,11 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     }
 
     // Pagination functions
-    const totalPages = Math.ceil(eventList.length / itemsPerPage);
+    const totalEventList = [...eventList, ...friendEventList];
+    const totalPages = Math.ceil(totalEventList.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentPageEvents = eventList.slice(startIndex, endIndex);
+    const currentPageEvents = totalEventList.slice(startIndex, endIndex);
 
     const goToPage = (page: number) => {
         if (page >= 1 && page <= totalPages) {
@@ -733,7 +772,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     <span id="cardSearchResult">
                         {searchResults}
                         {eventList.length > itemsPerPage && (
-                            <span> - Showing {Math.min(startIndex + 1, eventList.length)}-{Math.min(endIndex, eventList.length)} of {eventList.length} (Page {currentPage} of {totalPages})</span>
+                            <span> - Showing {Math.min(startIndex + 1, totalEventList.length)}-{Math.min(endIndex, totalEventList.length)} of {totalEventList.length} (Page {currentPage} of {totalPages})</span>
                         )}
                     </span>
                     {eventList.length > 0 && (
@@ -741,10 +780,13 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                             {currentPageEvents.map((event, index) => {
                                 const late = isEventLate(event);
                                 const upcoming = !late && isEventToday(event);
+                                const isUserEvent = eventList.includes(event);
+                                const isFriendEvent = friendEventList.includes(event);
                                 return (
                                     <div key={startIndex + index} className="search-result-card">
-                                        {(late || upcoming) && (
+                                        {(late || upcoming || isFriendEvent) && (
                                             <div className="event-status-wrapper">
+                                                {isFriendEvent && <span className="event-status-tag shared">Shared</span>}
                                                 {upcoming && <span className="event-status-tag upcoming">Upcoming</span>}
                                                 {late && <span className="event-status-tag late">Late</span>}
                                             </div>
@@ -756,30 +798,32 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                         <p><strong>Notes:</strong> {event.notes}</p>
                                             {((event.friends && event.friends.length > 0) || event.friend_id) && 
                                             <p><strong>Friend:</strong> {getFriendNames(event.friends || event.friend_id)}</p>}
-                                        <div className="event-item-actions">
-                                            <button
-                                                type="button"
-                                                className="buttons"
-                                                onClick={() => populateEvent(
-                                                    event._id,
-                                                    event.date,
-                                                    event.time,
-                                                    event.name,
-                                                    event.event_type,
-                                                    event.notes,
-                                                    event.friends || event.friend_id,
-                                                )}
-                                            >
-                                                Edit Event
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="buttons danger"
-                                                onClick={() => deleteEvent(event._id, event.userId)}
-                                            >
-                                                Delete Event
-                                            </button>
-                                        </div>
+                                        {isUserEvent && (
+                                            <div className="event-item-actions">
+                                                <button
+                                                    type="button"
+                                                    className="buttons"
+                                                    onClick={() => populateEvent(
+                                                        event._id,
+                                                        event.date,
+                                                        event.time,
+                                                        event.name,
+                                                        event.event_type,
+                                                        event.notes,
+                                                        event.friends || event.friend_id,
+                                                    )}
+                                                >
+                                                    Edit Event
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="buttons danger"
+                                                    onClick={() => deleteEvent(event._id, event.userId)}
+                                                >
+                                                    Delete Event
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

@@ -109,7 +109,8 @@ function Login()
                     {
                         firstName: userfirstName, 
                         lastName: userlastName, 
-                        id: userId
+                        id: userId,
+                        friend_id: res.friend_id
                     };
                     localStorage.setItem('user_data', JSON.stringify(user));
                     
