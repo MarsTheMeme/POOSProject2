@@ -23,6 +23,14 @@ function FriendUI({ className = '' }: FriendUIProps)
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     const [allFriends, setAllFriends] = useState<any[]>([]);
 
+    // Pagination state for friend search results
+    const [currentFriendSearchPage, setCurrentFriendSearchPage] = useState(1);
+    const [friendSearchPerPage] = useState(2); // Set to 2 for testing pagination with current data
+    
+    // Pagination state for all friends list
+    const [currentAllFriendsPage, setCurrentAllFriendsPage] = useState(1);
+    const [allFriendsPerPage] = useState(2); // Set to 2 for testing pagination with current data
+
     useEffect(() => {
         loadAllFriends();
     }, []);
@@ -101,6 +109,7 @@ function FriendUI({ className = '' }: FriendUIProps)
             let _results = res.results;
 
             setFriendList(_results);
+            setCurrentFriendSearchPage(1); // Reset to first page when new search is performed
         
             if(_results && _results.length > 0)
             {
@@ -266,6 +275,54 @@ function FriendUI({ className = '' }: FriendUIProps)
         }
     }
 
+    // Friend search results pagination functions
+    const totalFriendSearchPages = Math.ceil(friendList.length / friendSearchPerPage);
+    const friendSearchStartIndex = (currentFriendSearchPage - 1) * friendSearchPerPage;
+    const friendSearchEndIndex = friendSearchStartIndex + friendSearchPerPage;
+    const currentPageFriendSearch = friendList.slice(friendSearchStartIndex, friendSearchEndIndex);
+
+    const goToFriendSearchPage = (page: number) => {
+        if (page >= 1 && page <= totalFriendSearchPages) {
+            setCurrentFriendSearchPage(page);
+        }
+    };
+
+    const goToPreviousFriendSearchPage = () => {
+        if (currentFriendSearchPage > 1) {
+            setCurrentFriendSearchPage(currentFriendSearchPage - 1);
+        }
+    };
+
+    const goToNextFriendSearchPage = () => {
+        if (currentFriendSearchPage < totalFriendSearchPages) {
+            setCurrentFriendSearchPage(currentFriendSearchPage + 1);
+        }
+    };
+
+    // All friends list pagination functions
+    const totalAllFriendsPages = Math.ceil(allFriends.length / allFriendsPerPage);
+    const allFriendsStartIndex = (currentAllFriendsPage - 1) * allFriendsPerPage;
+    const allFriendsEndIndex = allFriendsStartIndex + allFriendsPerPage;
+    const currentPageAllFriends = allFriends.slice(allFriendsStartIndex, allFriendsEndIndex);
+
+    const goToAllFriendsPage = (page: number) => {
+        if (page >= 1 && page <= totalAllFriendsPages) {
+            setCurrentAllFriendsPage(page);
+        }
+    };
+
+    const goToPreviousAllFriendsPage = () => {
+        if (currentAllFriendsPage > 1) {
+            setCurrentAllFriendsPage(currentAllFriendsPage - 1);
+        }
+    };
+
+    const goToNextAllFriendsPage = () => {
+        if (currentAllFriendsPage < totalAllFriendsPages) {
+            setCurrentAllFriendsPage(currentAllFriendsPage + 1);
+        }
+    };
+
     return(
         <>
         <div id="FriendUIDiv" className={`card-section ${className}`.trim()}>
@@ -277,10 +334,15 @@ function FriendUI({ className = '' }: FriendUIProps)
                 <button type="button" id="searchCardButton" className="buttons"
                 onClick={searchFriend}>Search Friend</button>
             </div>
-            <span id="cardSearchResult">{searchResults}</span>
+            <span id="cardSearchResult">
+                {searchResults}
+                {friendList.length > friendSearchPerPage && (
+                    <span> - Showing {Math.min(friendSearchStartIndex + 1, friendList.length)}-{Math.min(friendSearchEndIndex, friendList.length)} of {friendList.length} (Page {currentFriendSearchPage} of {totalFriendSearchPages})</span>
+                )}
+            </span>
             {friendList.length > 0 && (
                 <div id="searchResultsList">
-                    {friendList.map((friend, index) => (
+                    {currentPageFriendSearch.map((friend, index) => (
                         <div key={index} style={{border: '1px solid #ccc', margin: '10px', padding: '10px'}}>
                             <p><strong>FriendID:</strong> {friend.friend_id}</p>
                             <p><strong>Nickname:</strong> {friend.Nickname}</p>
@@ -292,6 +354,42 @@ function FriendUI({ className = '' }: FriendUIProps)
                             onClick={() => populateFriend(friend._id,friend.friend_id,friend.nickname)}> Edit Friend </button><br />
                         </div>
                     ))}
+                    
+                    {/* Friend Search Pagination Controls */}
+                    {totalFriendSearchPages > 1 && (
+                        <div className="pagination-controls friend-search-pagination">
+                            <button
+                                type="button"
+                                className="pagination-btn"
+                                onClick={goToPreviousFriendSearchPage}
+                                disabled={currentFriendSearchPage === 1}
+                            >
+                                Previous
+                            </button>
+                            
+                            <div className="page-numbers">
+                                {Array.from({ length: totalFriendSearchPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        className={`page-number ${page === currentFriendSearchPage ? 'active' : ''}`}
+                                        onClick={() => goToFriendSearchPage(page)}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <button
+                                type="button"
+                                className="pagination-btn"
+                                onClick={goToNextFriendSearchPage}
+                                disabled={currentFriendSearchPage === totalFriendSearchPages}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
             <div className="subheading">Add / Edit Friend</div>
@@ -308,12 +406,19 @@ function FriendUI({ className = '' }: FriendUIProps)
             <span id="cardAddResult">{message}</span>
         </div>
         <section className="card-section friends-card">
-            <div className="section-heading">Friends List</div>
+            <div className="section-heading">
+                Friends List
+                {allFriends.length > allFriendsPerPage && (
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'normal', marginLeft: '8px' }}>
+                        - Showing {Math.min(allFriendsStartIndex + 1, allFriends.length)}-{Math.min(allFriendsEndIndex, allFriends.length)} of {allFriends.length} (Page {currentAllFriendsPage} of {totalAllFriendsPages})
+                    </span>
+                )}
+            </div>
             {allFriends.length === 0 ? (
                 <p className="empty-state">No friends yet. Add one using the card above.</p>
             ) : (
                 <div className="friends-list">
-                    {allFriends.map((friend, index) => (
+                    {currentPageAllFriends.map((friend, index) => (
                         <div key={friend._id ?? index} className="friend-item">
                             <div className="friend-item-header">
                                 <span className="friend-item-name">{friend.FirstName} {friend.LastName}</span>
@@ -337,6 +442,42 @@ function FriendUI({ className = '' }: FriendUIProps)
                             </div>
                         </div>
                     ))}
+                    
+                    {/* All Friends Pagination Controls */}
+                    {totalAllFriendsPages > 1 && (
+                        <div className="pagination-controls friends-list-pagination">
+                            <button
+                                type="button"
+                                className="pagination-btn"
+                                onClick={goToPreviousAllFriendsPage}
+                                disabled={currentAllFriendsPage === 1}
+                            >
+                                Previous
+                            </button>
+                            
+                            <div className="page-numbers">
+                                {Array.from({ length: totalAllFriendsPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        className={`page-number ${page === currentAllFriendsPage ? 'active' : ''}`}
+                                        onClick={() => goToAllFriendsPage(page)}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <button
+                                type="button"
+                                className="pagination-btn"
+                                onClick={goToNextAllFriendsPage}
+                                disabled={currentAllFriendsPage === totalAllFriendsPages}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </section>

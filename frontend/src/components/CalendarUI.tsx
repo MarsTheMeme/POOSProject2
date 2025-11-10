@@ -92,6 +92,18 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     const [friendList, setFriendList] = useState<any[]>([]); // stores friends in a list
     const [isSearchExpanded, setIsSearchExpanded] = useState(true);
     
+    // Pagination state for search results
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(3); // Set to 3 for testing pagination with current data
+    
+    // Pagination state for events card
+    const [currentEventsPage, setCurrentEventsPage] = useState(1);
+    const [eventsPerPage] = useState(3); // Set to 3 events per page
+    
+    // Pagination state for friend selector
+    const [currentFriendSelectorPage, setCurrentFriendSelectorPage] = useState(1);
+    const [friendSelectorPerPage] = useState(3); // Set to 3 friends per page
+    
     useEffect(() => {
         // Fetch friend list on component mount
         loadFriends();
@@ -234,6 +246,14 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 setMessage('Event has been added');
                 storeToken( res.jwtToken );
                 await loadAllEvents();
+                
+                // Clear all form fields after successful addition
+                setDate('');
+                setTime('');
+                setName('');
+                setType('');
+                setSelectedFriends([]);
+                setNotes('');
             }
         }
         catch(error:any)
@@ -270,6 +290,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
             let _results = res.results;
 
             setEventList(_results);
+            setCurrentPage(1); // Reset to first page when new search is performed
         
             if(_results && _results.length > 0)
             {
@@ -430,19 +451,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     {
         setType( e.target.value );
     }
-    function handleFriendSelection( e: any ) : void
-    {
-        const options = e.target.options;
-        const selected: string[] = [];
-        for (let i = 0; i < options.length; i++) 
-        {
-            if (options[i].selected) 
-            {
-                selected.push(options[i].value);
-            }
-        }
-        setSelectedFriends(selected);
-    }
+
     function handleSetNotes( e: any ) : void
     {
         setNotes( e.target.value );
@@ -451,6 +460,78 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     {
         setTime( e.target.value );
     }
+
+    // Pagination functions
+    const totalPages = Math.ceil(eventList.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPageEvents = eventList.slice(startIndex, endIndex);
+
+    const goToPage = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    // Events card pagination functions
+    const totalEventsPages = Math.ceil(allEvents.length / eventsPerPage);
+    const eventsStartIndex = (currentEventsPage - 1) * eventsPerPage;
+    const eventsEndIndex = eventsStartIndex + eventsPerPage;
+    const currentPageAllEvents = allEvents.slice(eventsStartIndex, eventsEndIndex);
+
+    const goToEventsPage = (page: number) => {
+        if (page >= 1 && page <= totalEventsPages) {
+            setCurrentEventsPage(page);
+        }
+    };
+
+    const goToPreviousEventsPage = () => {
+        if (currentEventsPage > 1) {
+            setCurrentEventsPage(currentEventsPage - 1);
+        }
+    };
+
+    const goToNextEventsPage = () => {
+        if (currentEventsPage < totalEventsPages) {
+            setCurrentEventsPage(currentEventsPage + 1);
+        }
+    };
+
+    // Friend selector pagination functions
+    const totalFriendSelectorPages = Math.ceil(friendList.length / friendSelectorPerPage);
+    const friendSelectorStartIndex = (currentFriendSelectorPage - 1) * friendSelectorPerPage;
+    const friendSelectorEndIndex = friendSelectorStartIndex + friendSelectorPerPage;
+    const currentPageFriendSelector = friendList.slice(friendSelectorStartIndex, friendSelectorEndIndex);
+
+    const goToFriendSelectorPage = (page: number) => {
+        if (page >= 1 && page <= totalFriendSelectorPages) {
+            setCurrentFriendSelectorPage(page);
+        }
+    };
+
+    const goToPreviousFriendSelectorPage = () => {
+        if (currentFriendSelectorPage > 1) {
+            setCurrentFriendSelectorPage(currentFriendSelectorPage - 1);
+        }
+    };
+
+    const goToNextFriendSelectorPage = () => {
+        if (currentFriendSelectorPage < totalFriendSelectorPages) {
+            setCurrentFriendSelectorPage(currentFriendSelectorPage + 1);
+        }
+    };
 
     return(
         <div className="calendar-ui">
@@ -478,14 +559,19 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     id="searchCardContent"
                     className={`search-collapsible ${isSearchExpanded ? 'open' : 'collapsed'}`}
                 >
-                    <span id="cardSearchResult">{searchResults}</span>
+                    <span id="cardSearchResult">
+                        {searchResults}
+                        {eventList.length > itemsPerPage && (
+                            <span> - Showing {Math.min(startIndex + 1, eventList.length)}-{Math.min(endIndex, eventList.length)} of {eventList.length} (Page {currentPage} of {totalPages})</span>
+                        )}
+                    </span>
                     {eventList.length > 0 && (
                         <div id="searchResultsList">
-                            {eventList.map((event, index) => {
+                            {currentPageEvents.map((event, index) => {
                                 const late = isEventLate(event);
                                 const upcoming = !late && isEventToday(event);
                                 return (
-                                    <div key={index} className="search-result-card">
+                                    <div key={startIndex + index} className="search-result-card">
                                         {(late || upcoming) && (
                                             <div className="event-status-wrapper">
                                                 {upcoming && <span className="event-status-tag upcoming">Upcoming</span>}
@@ -508,6 +594,42 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                     </div>
                                 );
                             })}
+                            
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="pagination-controls">
+                                    <button
+                                        type="button"
+                                        className="pagination-btn"
+                                        onClick={goToPreviousPage}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    
+                                    <div className="page-numbers">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                type="button"
+                                                className={`page-number ${page === currentPage ? 'active' : ''}`}
+                                                onClick={() => goToPage(page)}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    <button
+                                        type="button"
+                                        className="pagination-btn"
+                                        onClick={goToNextPage}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -523,20 +645,73 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                     onChange={handleSetName} />
                     <input type="text" id="cardText" placeholder="Event Type" value={type}
                     onChange={handleSetType} />
-                    <label htmlFor="friendSelect">Select Friends (hold Ctrl/Cmd to select multiple):</label>
-                    <select
-                        id="friendSelect"
-                        className="friend-select"
-                        multiple
-                        value={selectedFriends}
-                        onChange={handleFriendSelection}
-                    >
-                        {friendList.map((friend, index) => (
-                            <option key={index} value={friend.friend_id}>
-                                {friend.FirstName} {friend.LastName}
-                            </option>
+                    <label>
+                        Select Friends:
+                        {friendList.length > friendSelectorPerPage && (
+                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', marginLeft: '8px' }}>
+                                Showing {Math.min(friendSelectorStartIndex + 1, friendList.length)}-{Math.min(friendSelectorEndIndex, friendList.length)} of {friendList.length} (Page {currentFriendSelectorPage} of {totalFriendSelectorPages})
+                            </span>
+                        )}
+                    </label>
+                    <div className="friend-checkbox-container">
+                        {currentPageFriendSelector.map((friend, index) => (
+                            <div key={friendSelectorStartIndex + index} className="friend-checkbox-item">
+                                <input
+                                    type="checkbox"
+                                    id={`friend-${friend.friend_id}`}
+                                    value={friend.friend_id}
+                                    checked={selectedFriends.includes(friend.friend_id)}
+                                    onChange={(e) => {
+                                        const friendId = e.target.value;
+                                        if (e.target.checked) {
+                                            setSelectedFriends(prev => [...prev, friendId]);
+                                        } else {
+                                            setSelectedFriends(prev => prev.filter(id => id !== friendId));
+                                        }
+                                    }}
+                                />
+                                <label htmlFor={`friend-${friend.friend_id}`} className="friend-checkbox-label">
+                                    {friend.FirstName} {friend.LastName}
+                                </label>
+                            </div>
                         ))}
-                    </select>
+                    </div>
+                    
+                    {/* Friend Selector Pagination Controls */}
+                    {totalFriendSelectorPages > 1 && (
+                        <div className="pagination-controls friend-selector-pagination" style={{ marginTop: '12px' }}>
+                            <button
+                                type="button"
+                                className="pagination-btn"
+                                onClick={goToPreviousFriendSelectorPage}
+                                disabled={currentFriendSelectorPage === 1}
+                            >
+                                Previous
+                            </button>
+                            
+                            <div className="page-numbers">
+                                {Array.from({ length: totalFriendSelectorPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        className={`page-number ${page === currentFriendSelectorPage ? 'active' : ''}`}
+                                        onClick={() => goToFriendSelectorPage(page)}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <button
+                                type="button"
+                                className="pagination-btn"
+                                onClick={goToNextFriendSelectorPage}
+                                disabled={currentFriendSelectorPage === totalFriendSelectorPages}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                     <input type="text" id="cardText" placeholder="Notes" value={notes}
                     onChange={handleSetNotes} />
                     <div className="form-actions">
@@ -549,12 +724,19 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 </div>
                 {friendCard}
                 <section className="card-section events-card">
-                    <div className="section-heading">Events</div>
+                    <div className="section-heading">
+                        Events
+                        {allEvents.length > eventsPerPage && (
+                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', marginLeft: '8px' }}>
+                                - Showing {Math.min(eventsStartIndex + 1, allEvents.length)}-{Math.min(eventsEndIndex, allEvents.length)} of {allEvents.length} (Page {currentEventsPage} of {totalEventsPages})
+                            </span>
+                        )}
+                    </div>
                     {allEvents.length === 0 ? (
                         <p className="empty-state">No events yet. Start by adding one above.</p>
                     ) : (
                         <div className="events-list">
-                            {allEvents.map((event, index) => {
+                            {currentPageAllEvents.map((event, index) => {
                                 const late = isEventLate(event);
                                 const upcoming = !late && isEventToday(event);
                                 return (
@@ -602,6 +784,42 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                                     </div>
                                 );
                             })}
+                            
+                            {/* Events Pagination Controls */}
+                            {totalEventsPages > 1 && (
+                                <div className="pagination-controls events-pagination">
+                                    <button
+                                        type="button"
+                                        className="pagination-btn"
+                                        onClick={goToPreviousEventsPage}
+                                        disabled={currentEventsPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    
+                                    <div className="page-numbers">
+                                        {Array.from({ length: totalEventsPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                type="button"
+                                                className={`page-number ${page === currentEventsPage ? 'active' : ''}`}
+                                                onClick={() => goToEventsPage(page)}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    <button
+                                        type="button"
+                                        className="pagination-btn"
+                                        onClick={goToNextEventsPage}
+                                        disabled={currentEventsPage === totalEventsPages}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </section>
