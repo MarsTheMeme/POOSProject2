@@ -234,6 +234,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                 setMessage('Event has been added');
                 storeToken( res.jwtToken );
                 await loadAllEvents();
+                clearEdit();
             }
         }
         catch(error:any)
