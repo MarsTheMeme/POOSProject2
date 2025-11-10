@@ -11,7 +11,7 @@ function FriendUI({ className = '' }: FriendUIProps)
     let _ud : any = localStorage.getItem('user_data');
     let ud = JSON.parse( _ud );
     let userId : string = ud.id; // id from local Login/Signup tsx
-    // let _id : string;
+    let friend_id : string = ud.friend_id;
     // var firstName = ud.firstName;
     // var lastName = ud.lastName;
     const [message,setMessage] = useState('');
@@ -248,7 +248,7 @@ function FriendUI({ className = '' }: FriendUIProps)
         if (friendCode) {
             setFriendCode(''); // Hide the code
         } else {
-            setFriendCode(userId); // Show the user's FriendID
+            setFriendCode(friend_id); // Show the user's FriendID
         }
     }
 
