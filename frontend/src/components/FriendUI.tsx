@@ -334,7 +334,11 @@ function FriendUI({ className = '' }: FriendUIProps)
             onChange={handleSetNickname} />
             <div className="form-actions">
                 <button type="button" id="friendActionButton" className="buttons"
-                onClick={handleFriendAction}>
+                onClick={async (e) => {
+                    await handleFriendAction(e);
+                    // Notify parent to reload friends
+                    window.dispatchEvent(new CustomEvent('friendsUpdated'));
+                }}>
                     {id ? 'Edit Friend' : 'Add Friend'}
                 </button>
                 {id && (
@@ -410,7 +414,11 @@ function FriendUI({ className = '' }: FriendUIProps)
                                 <button
                                     type="button"
                                     className="buttons danger"
-                                    onClick={() => deleteFriend(friend._id, friend.userId)}
+                                    onClick={async () => {
+                                        await deleteFriend(friend._id, friend.userId);
+                                        // Notify parent to reload friends
+                                        window.dispatchEvent(new CustomEvent('friendsUpdated'));
+                                    }}
                                 >
                                     Delete Friend
                                 </button>

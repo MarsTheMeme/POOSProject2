@@ -130,6 +130,17 @@ function CalendarUI({ friendCard }: CalendarUIProps)
         loadFriends();
         loadAllEvents();
         loadAllFriendEvents();
+
+        const handleFriendsUpdated = () => {
+            loadFriends();
+        };
+    
+        window.addEventListener('friendsUpdated', handleFriendsUpdated);
+    
+        return () => {
+            window.removeEventListener('friendsUpdated', handleFriendsUpdated);
+        };
+        
     }, []);
 
     function handleTokenExpiration(error: string) : void
@@ -815,7 +826,7 @@ function CalendarUI({ friendCard }: CalendarUIProps)
                             <span> - Showing {Math.min(startIndex + 1, totalEventList.length)}-{Math.min(endIndex, totalEventList.length)} of {totalEventList.length} (Page {currentPage} of {totalPages})</span>
                         )}
                     </span>
-                    {eventList.length > 0 && (
+                    {(eventList.length > 0 || friendEventList.length > 0) && (
                         <div id="searchResultsList">
                             {currentPageEvents.map((event, index) => {
                                 const late = isEventLate(event);
