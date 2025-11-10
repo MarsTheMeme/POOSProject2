@@ -132,7 +132,7 @@ exports.setApp = function( app, client )
                 try
                 {
                     const token = require('./createJWT.js');
-                    const retToken = token.createToken( fn, ln, id );
+                    const retToken = token.createToken( fn, ln, id, fid);
                     ret = { accessToken: retToken.accessToken, id: id, Login: login, firstName: fn, lastName: ln, friend_id: fid };
                 }
                 catch(e)
@@ -284,7 +284,7 @@ exports.setApp = function( app, client )
         {
             try
             {
-                const retToken = token.createToken( user.FirstName, user.LastName, userId );
+                const retToken = token.createToken( user.FirstName, user.LastName, userId, user.friend_id );
                 res.status(200).json({
                     success:true,
                     alreadyVerified:true,
@@ -342,7 +342,7 @@ exports.setApp = function( app, client )
 
         try
         {
-            const retToken = token.createToken( user.FirstName, user.LastName, userId );
+            const retToken = token.createToken( user.FirstName, user.LastName, userId, user.friend_id );
             res.status(200).json({
                 success:true,
                 message:'Email verified successfully.',
