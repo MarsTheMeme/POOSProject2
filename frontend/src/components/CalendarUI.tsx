@@ -656,51 +656,52 @@ function CalendarUI({ friendCard }: CalendarUIProps)
     }
     function handleSetTime( e: any ) : void
     {
-        let value = e.target.value;
+        const inputValue = e.target.value;
+        let digitsOnly = inputValue.replace(/[^\d]/g, '');
         
-        // Remove all non-numeric characters except existing colons for processing
-        const numbersOnly = value.replace(/[^\d]/g, '');
-        
-        // Auto-format as user types: H:MM or HH:MM (12-hour format)
-        if (numbersOnly.length >= 1) {
-            if (numbersOnly.length <= 2) {
-                value = numbersOnly;
-            } else if (numbersOnly.length <= 4) {
-                let hours = numbersOnly.slice(0, 2);
-                const minutes = numbersOnly.slice(2);
-                
-                // Convert leading zeros for hours in 12-hour format
-                const hoursNum = parseInt(hours, 10);
-                if (hoursNum === 0) {
-                    hours = '12'; // 00 becomes 12 in 12-hour format
-                } else if (hoursNum > 12) {
-                    // If someone types something like 13, 14, etc., convert to 12-hour
-                    hours = String(hoursNum > 12 ? hoursNum - 12 : hoursNum);
-                } else {
-                    hours = String(hoursNum); // Remove leading zero
-                }
-                
-                value = hours + ':' + minutes;
-            } else {
-                // Limit to 4 digits (HHMM)
-                const limited = numbersOnly.slice(0, 4);
-                let hours = limited.slice(0, 2);
-                const minutes = limited.slice(2);
-                
-                const hoursNum = parseInt(hours, 10);
-                if (hoursNum === 0) {
-                    hours = '12';
-                } else if (hoursNum > 12) {
-                    hours = String(hoursNum > 12 ? hoursNum - 12 : hoursNum);
-                } else {
-                    hours = String(hoursNum);
-                }
-                
-                value = hours + ':' + minutes;
-            }
+        if (digitsOnly.length === 0) {
+            setTime('');
+            return;
         }
-        
-        setTime(value);
+
+        if (digitsOnly.length > 4) {
+            digitsOnly = digitsOnly.slice(0, 4);
+        }
+
+        let hoursPart = '';
+        let minutesPart = '';
+
+        if (digitsOnly.length <= 2) {
+            setTime(digitsOnly);
+            return;
+        }
+
+        hoursPart = digitsOnly.slice(0, digitsOnly.length - 2);
+        minutesPart = digitsOnly.slice(-2);
+
+        if (hoursPart.length > 0) {
+            let hoursNum = parseInt(hoursPart, 10);
+            if (Number.isNaN(hoursNum) || hoursNum === 0) {
+                hoursNum = 12;
+            } else if (hoursNum > 12) {
+                hoursNum = hoursNum % 12;
+                if (hoursNum === 0) {
+                    hoursNum = 12;
+                }
+            }
+            hoursPart = hoursNum.toString();
+        }
+
+        if (minutesPart.length === 1) {
+            minutesPart = '0' + minutesPart;
+        }
+
+        let formattedValue = hoursPart;
+        if (digitsOnly.length > 2) {
+            formattedValue += ':' + (minutesPart || '00');
+        }
+
+        setTime(formattedValue);
     }
 
     function handleSetAmPm( e: any ) : void
