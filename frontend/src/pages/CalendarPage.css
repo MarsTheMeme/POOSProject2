@@ -221,9 +221,9 @@
 }
 
 .search-collapsible {
-    max-height: 800px;
+    max-height: 2000px; /* Increased to accommodate more results with pagination */
     transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.25s ease;
-    overflow: hidden;
+    overflow: visible;
     opacity: 1;
     margin-top: 12px;
 }
@@ -330,6 +330,78 @@
 
 .result-actions .buttons:hover {
     background: #092446;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pagination-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 4px;
+}
+
+.page-number {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 36px;
+    text-align: center;
+}
+
+.page-number:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.page-number.active {
+    background: #ffffff;
+    color: #0b1f3f;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.page-number.active:hover {
+    background: #ffffff;
+    color: #0b1f3f;
+    transform: translateY(-1px);
 }
 
 .event-card select,
@@ -598,4 +670,198 @@
         width: 100%;
         grid-template-columns: 1fr;
     }
+
+    /* Mobile pagination styles */
+    .pagination-controls {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .page-numbers {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .pagination-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+
+    .page-number {
+        padding: 5px 10px;
+        font-size: 0.85rem;
+        min-width: 32px;
+    }
+}
+
+/* Ensure search results list can expand */
+#searchResultsList {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Events pagination specific styles */
+.events-pagination {
+    background: rgba(11, 31, 63, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 20px;
+    border: 1px solid rgba(11, 31, 63, 0.1);
+}
+
+.events-pagination .pagination-btn {
+    background: #0b1f3f;
+    border: 1px solid #0b1f3f;
+    color: #ffffff;
+}
+
+.events-pagination .pagination-btn:hover:not(:disabled) {
+    background: #152a4f;
+    border-color: #152a4f;
+}
+
+.events-pagination .page-number {
+    background: rgba(11, 31, 63, 0.1);
+    border: 1px solid rgba(11, 31, 63, 0.3);
+    color: #0b1f3f;
+}
+
+.events-pagination .page-number:hover {
+    background: rgba(11, 31, 63, 0.2);
+}
+
+.events-pagination .page-number.active {
+    background: #0b1f3f;
+    color: #ffffff;
+}
+
+/* Friends pagination specific styles */
+.friend-search-pagination,
+.friends-list-pagination {
+    background: rgba(48, 90, 154, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 20px;
+    border: 1px solid rgba(48, 90, 154, 0.1);
+}
+
+.friend-search-pagination .pagination-btn,
+.friends-list-pagination .pagination-btn {
+    background: #305a9a;
+    border: 1px solid #305a9a;
+    color: #ffffff;
+}
+
+.friend-search-pagination .pagination-btn:hover:not(:disabled),
+.friends-list-pagination .pagination-btn:hover:not(:disabled) {
+    background: #3d6bb3;
+    border-color: #3d6bb3;
+}
+
+.friend-search-pagination .page-number,
+.friends-list-pagination .page-number {
+    background: rgba(48, 90, 154, 0.1);
+    border: 1px solid rgba(48, 90, 154, 0.3);
+    color: #305a9a;
+}
+
+.friend-search-pagination .page-number:hover,
+.friends-list-pagination .page-number:hover {
+    background: rgba(48, 90, 154, 0.2);
+}
+
+.friend-search-pagination .page-number.active,
+.friends-list-pagination .page-number.active {
+    background: #305a9a;
+    color: #ffffff;
+}
+
+/* Friend selector pagination */
+.friend-selector-pagination {
+    background: rgba(11, 31, 63, 0.03);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(11, 31, 63, 0.08);
+}
+
+.friend-selector-pagination .pagination-btn {
+    background: #0b1f3f;
+    border: 1px solid #0b1f3f;
+    color: #ffffff;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+}
+
+.friend-selector-pagination .pagination-btn:hover:not(:disabled) {
+    background: #152a4f;
+    border-color: #152a4f;
+}
+
+.friend-selector-pagination .page-number {
+    background: rgba(11, 31, 63, 0.08);
+    border: 1px solid rgba(11, 31, 63, 0.2);
+    color: #0b1f3f;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    min-width: 28px;
+}
+
+.friend-selector-pagination .page-number:hover {
+    background: rgba(11, 31, 63, 0.15);
+}
+
+.friend-selector-pagination .page-number.active {
+    background: #0b1f3f;
+    color: #ffffff;
+}
+
+/* Friend checkbox selection styles */
+.friend-checkbox-container {
+    background: #ffffff;
+    border: 1px solid #c7ddf6;
+    border-radius: 16px;
+    padding: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.friend-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5f0ff;
+}
+
+.friend-checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.friend-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #0b1f3f;
+}
+
+.friend-checkbox-label {
+    cursor: pointer;
+    color: #0b1f3f;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin: 0;
+    flex: 1;
+}
+
+.friend-checkbox-label:hover {
+    color: #0090D9;
+}
+
+.friend-checkbox-item input[type="checkbox"]:checked + .friend-checkbox-label {
+    color: #0b1f3f;
+    font-weight: 600;
 }
